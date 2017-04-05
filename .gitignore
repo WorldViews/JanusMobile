@@ -29,6 +29,7 @@ build/
 .gradle
 local.properties
 *.iml
+android/libuvccamera/src/main/libs
 
 # node.js
 #
@@ -40,6 +41,19 @@ yarn-error.log
 buck-out/
 \.buckd/
 *.keystore
+
+# generated files
+bin/
+obj
+obj/local
+gen/
+bin/dexedLibs
+bin/res
+bin/*.xml
+bin/classes
+bin/res
+bin/jarlist.cache
+*.cache
 
 # fastlane
 #

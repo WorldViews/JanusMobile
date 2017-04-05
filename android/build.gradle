@@ -20,5 +20,17 @@ allprojects {
             // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
             url "$rootDir/../node_modules/react-native/android"
         }
+        maven { url 'http://raw.github.com/saki4510t/libcommon/master/repository/' }
     }
+}
+
+ext {
+        supportLibVersion = '23.0.1'  // variable that can be referenced to keep support libs consistent
+        commonLibVersion= '1.4.3'
+        versionBuildTool = '23.0.2'
+        versionCompiler = 23
+        versionTarget = 22
+        versionNameString = '1.0.0'
+        javaSourceCompatibility = JavaVersion.VERSION_1_7
+        javaTargetCompatibility = JavaVersion.VERSION_1_7
 }
