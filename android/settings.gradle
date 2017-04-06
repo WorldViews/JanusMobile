@@ -1,4 +1,9 @@
 rootProject.name = 'JanusMobile'
 
-include ':libuvccamera', ':WebRTCModule', ':app'
+include ':libuvccamera', ':app'
+
+include ':WebRTCModule'
 project(':WebRTCModule').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-webrtc/android')
+
+include ':react-native-toast'
+project(':react-native-toast').projectDir = new File(settingsDir, '../node_modules/@remobile/react-native-toast/android')

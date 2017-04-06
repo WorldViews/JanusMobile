@@ -1,18 +1,3 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- * @flow
- */
-
-import React, { Component } from 'react';
-import {
-  AppRegistry,
-  StyleSheet,
-  Text,
-  View,
-  Navigator,
-  NativeModules
-} from 'react-native';
 
 import WebRTC, {
   RTCPeerConnection,
@@ -24,106 +9,77 @@ import WebRTC, {
   getUserMedia,
 } from 'react-native-webrtc';
 
-import { connect } from 'react-redux';
+import Janus from './janus';
 
-//import Janus from 'janus-gateway';
-import Janus from './lib/janus'
+class JanusClient {
 
-const { UVCCameraModule } = NativeModules;
+    constructor() {
+        this.state = {};
+    }
 
-import { Match, MemoryRouter as Router } from 'react-router';
+    connect(url, username, password, roomId, cb) {
+        this.state.url = url;
+        this.state.username = username;
+        this.state.password = password;
+        this.state.roomId = roomId;
+        this.initWebRTC(cb);
+    }
 
-import LoginView from './components/LoginView';
-import VideoChatView from './components/VideoChatView';
+    disconnect() {
+        this.janus.destroy();
+    }
 
-import { createStore } from 'redux';
-import { Provider } from 'react-redux';
-
-import reducer from './reducers'
-const store = createStore(reducer)
-
-
-export default class JanusMobile extends Component {
-
-  constructor(props) {
-    super(props);
-    this.state = { 
-      route: LoginView,
-      store,
-      videoURL: null,
-      connected: false,
-      janusURL: 'wss://sd6.dcpfs.net:8989/janus',
-      roomId: 9000
-    };
-
-    var r = UVCCameraModule.getCameraList((cameraMap) => { 
-      console.log('getCameraList', cameraMap); 
-    });
-    //this.initWebRTC();
-
-    let unsubscribe = store.subscribe(() => {
-        let state = store.getState();
-        if (this.state.route != state.actions.route) {
-          this.setState({route: state.actions.route});
+    initWebRTC(cb) {
+        let isFront = true;
+        let self = this;
+        MediaStreamTrack.getSources(sourceInfos => {
+        console.log(sourceInfos);
+        let videoSourceId;
+        for (const i = 0; i < sourceInfos.length; i++) {
+            const sourceInfo = sourceInfos[i];
+            if (sourceInfo.kind == "video" && sourceInfo.facing == (isFront ? "front" : "back")) {
+            videoSourceId = sourceInfo.id;
+            }
         }
-      }
-    )
-  }
+        getUserMedia({
+            audio: true,
+            video: {
+            mandatory: {
+                minWidth: 640, // Provide your own width, height and frame rate here
+                minHeight: 480,
+                minFrameRate: 30
+            },
+            facingMode: (isFront ? "user" : "environment"),
+            optional: (videoSourceId ? [{ sourceId: videoSourceId }] : [])
+            }
+        }, function (stream) {
+            self.state.localStream = stream;
+            self.initJanus(self.state.url, cb);
+        }, console.error);
+        });
+    }
 
-  initWebRTC() {
-    let isFront = true;
-    let self = this;
-    MediaStreamTrack.getSources(sourceInfos => {
-      console.log(sourceInfos);
-      let videoSourceId;
-      for (const i = 0; i < sourceInfos.length; i++) {
-        const sourceInfo = sourceInfos[i];
-        if (sourceInfo.kind == "video" && sourceInfo.facing == (isFront ? "front" : "back")) {
-          videoSourceId = sourceInfo.id;
-        }
-      }
-      getUserMedia({
-        audio: true,
-        video: {
-          mandatory: {
-            minWidth: 640, // Provide your own width, height and frame rate here
-            minHeight: 480,
-            minFrameRate: 30
-          },
-          facingMode: (isFront ? "user" : "environment"),
-          optional: (videoSourceId ? [{ sourceId: videoSourceId }] : [])
-        }
-      }, function (stream) {
-        self.localStream = stream;
-        self.initJanus();
-        let url = stream.toURL()
-        self.setState({videoURL: url });
-      }, console.error);
-    });
-  }
-
-  initJanus() {
+  initJanus(url, cb) {
     let self = this;
     Janus.init({
       debug: "all", 
       callback: () => {
-        let janusURL = self.state.janusURL;
         self.janus = new Janus({
-          server: janusURL,
+          server: url,
           success: () => {
-            self.attachVideoRoom();
+            self.attachVideoRoom(cb);
           }
         });
       }
     });
   }
 
-  attachVideoRoom() {
+  attachVideoRoom(cb) {
     let self = this;
     let opaqueId = "videoroom-" + Janus.randomString(12);
     self.janus.attach({
       plugin: "janus.plugin.videoroom",
-      stream: self.localStream,
+      stream: self.state.localStream,
       opaqueId: opaqueId,
       success: function(pluginHandle) {
         // Step 1. Right after attaching to the plugin, we send a
@@ -132,11 +88,15 @@ export default class JanusMobile extends Component {
         //connection.register(username);
         console.log("Plugin attached! (" + pluginHandle.getPlugin() + ", id=" + pluginHandle.getId() + ")");
         self.videoRoom = pluginHandle;
-        var register = { "request": "join", "room": self.state.roomId, "ptype": "publisher", "display": "xxxx" };
+        var register = { "request": "join", "room": self.state.roomId, "ptype": "publisher", "display": self.state.username };
         pluginHandle.send({"message": register});
+        if (cb) {
+            cb(true);
+        }
       },
       error: function(error) {
         //console.error("Error attaching plugin... " + error);
+
       },
       consentDialog: function(on) {
         console.log("Consent dialog should be " + (on ? "on" : "off") + " now");
@@ -200,7 +160,7 @@ export default class JanusMobile extends Component {
           };
 
           self.videoRoom.createOffer({
-            stream: self.localStream,
+            stream: self.state.localStream,
             media: media,
             success: function(jsep) {
               console.log("Got publisher SDP!");
@@ -232,7 +192,7 @@ export default class JanusMobile extends Component {
         } else if (event === "event") {
           // Any new feed to attach to?
           if ((msg.publishers instanceof Array) && msg.publishers.length > 0) {
-            that.subscribeToFeeds(msg.publishers, that.room.id);
+            //that.subscribeToFeeds(msg.publishers, that.room.id);
           // One of the publishers has gone away?
           } else if(msg.leaving !== undefined && msg.leaving !== null) {
             var leaving = msg.leaving;
@@ -258,108 +218,7 @@ export default class JanusMobile extends Component {
     })
   }
 
-  // componentFactory(name) {
-  //   switch (name) {
-  //     case 'LoginView':
-  //       return <LoginView/>
-  //     case 'VideoChatView':
-  //       return <VideoChatView/>
-  //     default:
-  //       return <LoginView/>
-  //   }
-  // }
-
-    /**
-     * Create a ReactElement from the specified component, the specified props
-     * and the props of this AbstractApp which are suitable for propagation to
-     * the children of this Component.
-     *
-     * @param {Component} component - The component from which the ReactElement
-     * is to be created.
-     * @param {Object} props - The read-only React Component props with which
-     * the ReactElement is to be initialized.
-     * @returns {ReactElement}
-     * @protected
-     */
-    _createElement(component, props) {
-        /* eslint-disable no-unused-vars, lines-around-comment */
-        const {
-            // Don't propagate the config prop(erty) because the config is
-            // stored inside the Redux state and, thus, is visible to the
-            // children anyway.
-            config,
-            // Don't propagate the dispatch and store props because they usually
-            // come from react-redux and programmers don't really expect them to
-            // be inherited but rather explicitly connected.
-            dispatch, // eslint-disable-line react/prop-types
-            store,
-            // The url property was introduced to be consumed entirely by
-            // AbstractApp.
-            url,
-            // The remaining props, if any, are considered suitable for
-            // propagation to the children of this Component.
-            ...thisProps
-        } = this.props;
-        /* eslint-enable no-unused-vars, lines-around-comment */
-
-        // eslint-disable-next-line object-property-newline
-        return React.createElement(component, { ...thisProps, ...props });
-    }
-
-  render() {
-    return (<Provider store={store}>
-      {this._createElement(this.state.route)}
-    </Provider>)
-  }
-
-  renderxx() {
-      return (
-        <View style={styles.container}>
-          <RTCView style={styles.video}
-            objectFit="cover"
-            streamURL={this.state.videoURL}/>
-          <Text style={styles.welcome}>
-            Welcome to React Native!
-          </Text>
-          <Text style={styles.instructions}>
-            To get started, edit index.android.js
-          </Text>
-          <Text style={styles.instructions}>
-            Double tap R on your keyboard to reload,{'\n'}
-            Shake or press menu button for dev menu
-          </Text>
-        </View>
-      )
-  }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    color: '#cfc',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  video: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    backgroundColor: '#ccc',
-    borderWidth: 1,
-    width: '100%',
-    height: '100%',
-  },
-});
-
-AppRegistry.registerComponent('JanusMobile', () => JanusMobile);
+const janusClient = new JanusClient();
+export default janusClient;
