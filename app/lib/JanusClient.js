@@ -34,13 +34,13 @@ class JanusClient {
         let self = this;
         MediaStreamTrack.getSources(sourceInfos => {
         console.log(sourceInfos);
-        let videoSourceId;
-        for (const i = 0; i < sourceInfos.length; i++) {
-            const sourceInfo = sourceInfos[i];
-            if (sourceInfo.kind == "video" && sourceInfo.facing == (isFront ? "front" : "back")) {
-            videoSourceId = sourceInfo.id;
-            }
-        }
+        let videoSourceId = "UVCCamera";
+        // for (const i = 0; i < sourceInfos.length; i++) {
+        //     const sourceInfo = sourceInfos[i];
+        //     if (sourceInfo.kind == "video" && sourceInfo.facing == (isFront ? "front" : "back")) {
+        //     videoSourceId = sourceInfo.id;
+        //     }
+        // }
         getUserMedia({
             audio: true,
             video: {
