@@ -16,20 +16,33 @@ import * as actions from '../actions';
 
 import Toast from 'react-native-toast';
 
+import CheckBox from 'react-native-checkbox';
+
 class LoginView extends Component {
     constructor(props) {
         super(props);
-        this.state = { username: '' };
+        this.state = { 
+            username: '',
+            roomId: props.roomId.toString(),
+            useOTG: props.useOTG
+         };
     }
 
     onLogin() {
         console.log('Login:', this.state);
         if (this.state.username) {
+            this.props.dispatch(actions.setRoomId(parseInt(this.state.roomId)));
+            this.props.dispatch(actions.useOTGCamera(this.state.useOTG));
             this.props.dispatch(actions.connect(this.state.username));
             this.props.dispatch(actions.route(VideoChatView))
         } else {
             Toast.show("Please enter a username");
         }
+    }
+
+    useOTG(checked) {
+        //this.props.dispatch(actions.useOTGCamera(!checked));
+        this.setState({useOTG:!checked});
     }
 
     render() {
@@ -39,17 +52,33 @@ class LoginView extends Component {
                     Janus Video Room
                 </Text>
                 <TextInput
-                    style={styles.username}
+                    style={styles.input}
                     placeholder="Username"
-                    placeholderTextColor="#999"
-                    underlineColorAndroid="#aaa"
+                    placeholderTextColor="#aaa"
+                    underlineColorAndroid="#fff"
                     onChangeText={(username) => this.setState({username})}
                     value={this.state.username}
                 />
+                <TextInput
+                    style={styles.input}
+                    placeholder="RoomId"
+                    placeholderTextColor="#aaa"
+                    underlineColorAndroid="#fff"
+                    onChangeText={(roomId) => this.setState({roomId})}
+                    value={this.state.roomId}
+                />                
+                <View style={styles.checkbox}>
+                    <CheckBox label="Use OTG Camera"
+                        labelStyle={styles.text}
+                        checked={this.state.useOTG}
+                        underlayColor="#4099ff"
+                        onChange={(checked) => this.useOTG(checked)}
+                        />
+                </View>
                 <Button
                     onPress={() => this.onLogin()}
                     title="Login"
-                    color="#4099FF"
+                    color="#60DFE5"
                     accessibilityLabel="Login"
                 />
             </View>
@@ -60,7 +89,14 @@ class LoginView extends Component {
 //const ConnectedLoginView = connect(mapStateToProps)(LoginView);
 // const ConnectedLoginView = LoginView;
 
-export default connect()(LoginView);
+function mapStateToProps(state) {
+    return { 
+        roomId: state.actions.roomId,
+        useOTG: state.actions.useOTG
+    };
+}
+
+export default connect(mapStateToProps)(LoginView);
 
 const styles = StyleSheet.create({
     container: {
@@ -68,9 +104,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 50,
-        backgroundColor: '#333',
+        backgroundColor: '#4099ff',
     },
-    username: {
+    input: {
         height: 60,
         width: 300,
         borderColor: '#aaa', 
@@ -79,14 +115,20 @@ const styles = StyleSheet.create({
         padding: 10,
         fontSize: 20,
         color: '#000',
-        backgroundColor: "#aaa",
-        marginTop: 30,
-        marginBottom: 30
+        backgroundColor: "#fff",
+        marginTop: 10   ,
+        marginBottom: 10
     },
     welcome: {
-        fontSize: 20,
+        fontSize: 25,
         textAlign: 'center',
         color: '#fff',
         margin: 10,
     },
+    checkbox: {
+        marginBottom: 10
+    },
+    text: {
+        color: '#fff'
+    }
 });

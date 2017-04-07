@@ -837,7 +837,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
      */
     private VideoCapturer createVideoCapturer(CameraEnumerator enumerator, boolean isFacing,
             String sourceId) {
-        if (sourceId.equals("UVCCamera")) {
+        if (sourceId != null && sourceId.equals("UVCCamera")) {
             return new UVCCameraCapturer();
         }
         VideoCapturer videoCapturer = null;

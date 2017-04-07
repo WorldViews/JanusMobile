@@ -34,11 +34,15 @@ class VideoChatView extends Component {
         let self = this;
 
         //let state = this.props.getState();
-        JanusClient.connect(this.props.janusURL, this.props.username, '', this.props.roomId, () => {
+        JanusClient.connect(this.props.janusURL, this.props.roomId, 
+        { username: this.props.username,
+          useOTG: this.props.useOTG,
+          success: () => {
             console.log('done');
             self.setState({
                 videoURL: JanusClient.state.localStream.toURL()
             });
+          }
         });
     }
 
@@ -60,18 +64,12 @@ class VideoChatView extends Component {
         return (
         <View style={styles.container}>
           <RTCView style={styles.video}
-            objectFit="cover"
+            objectFit="contain"
             streamURL={this.state.videoURL}/>
             <View style={styles.bottom}>
               <Button title="Logout"
                 color="red"
                 onPress={() => this.onLogout() }
-              />
-              <Button title="Audio"
-                onPress={() => this.toggleAudio() }
-              />
-              <Button title="Video"
-                onPress={() => this.toggleVideo() }
               />
           </View>
         </View>
@@ -80,9 +78,12 @@ class VideoChatView extends Component {
 }
 
 function mapStateToProps(state, props) {
-    return { janusURL: state.actions.janusURL, 
-        username: state.actions.username,
-    roomId: state.actions.roomId };
+    return { 
+      janusURL: state.actions.janusURL, 
+      username: state.actions.username,
+      roomId: state.actions.roomId,
+      useOTG: state.actions.useOTG
+     };
 }
 
 export default connect(mapStateToProps)(VideoChatView);
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#000',
   },
   welcome: {
     fontSize: 20,
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    backgroundColor: '#ccc',
+    backgroundColor: '#000',
     borderWidth: 1,
     width: '100%',
     height: '100%',

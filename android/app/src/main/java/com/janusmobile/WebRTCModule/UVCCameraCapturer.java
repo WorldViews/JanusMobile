@@ -30,6 +30,10 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.CameraEnumerationAndroid;
 import org.webrtc.CameraVideoCapturer;
@@ -57,11 +61,12 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
     private volatile Handler cameraThreadHandler;
     private final AtomicBoolean isCameraRunning = new AtomicBoolean();
     private UVCCamera camera;
+    private int preferredWidth;
+    private int preferredHeight;
 
     private USBMonitor usbMonitor;
 
-    private TextureView cameraView;
-
+    private Surface previewSurface;
 
     public void initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, CapturerObserver frameObserver) {
         Logging.d("UVCCameraCapturer", "initialize");
@@ -76,8 +81,6 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
             throw new IllegalStateException("Already initialized");
         }
 
-        cameraView = new TextureView(applicationContext);
-
         this.frameObserver = frameObserver;
         this.applicationContext = applicationContext;
 
@@ -86,6 +89,8 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     public void startCapture(final int width, final int height, final int framerate) {
         Logging.d("UVCCameraCapturer", String.format("startCapture %d %d %d", width, height, framerate));
+        preferredWidth = width;
+        preferredHeight = height;
 
         if (isCameraRunning.getAndSet(true)) {
             Logging.e(TAG, "Camera has already been started.");
@@ -102,8 +107,13 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
     public void stopCapture() throws InterruptedException {
         Logging.d("UVCCameraCapturer", "stopCapture");
         usbMonitor.unregister();
-        if (camera != null) {
-            camera.stopCapture();
+        releaseCamera();
+        if (previewSurface != null) {
+            previewSurface.release();
+            previewSurface = null;
+        }
+        if (this.usbMonitor != null) {
+            this.usbMonitor.destroy();
         }
 //        isCameraRunning.getAndSet(false);
 //        this.thread.wait();
@@ -116,6 +126,11 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     public void dispose() {
         Logging.d("UVCCameraCapturer", "dispose");
+        releaseCamera();
+        if (previewSurface != null) {
+            previewSurface.release();
+            previewSurface = null;
+        }
         if (this.usbMonitor != null) {
             this.usbMonitor.destroy();
         }
@@ -168,43 +183,92 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
     @Override
     public void onConnect(final UsbDevice device, final USBMonitor.UsbControlBlock ctrlBlock, final boolean createNew) {
         Log.v(TAG, "onConnect:");
-        this.camera = new UVCCamera();
-        this.camera.open(ctrlBlock);
-        this.camera.setPreviewSize(1280, 720, 1, 30, 2, 1.0f);
-        this.camera.setFrameCallback(this, UVCCamera.PIXEL_FORMAT_YUV420SP);
+        try {
+            releaseCamera();
+            this.camera = new UVCCamera();
+            this.camera.open(ctrlBlock);
 
-        final int[] textureHandleA = new int[3];
-        GLES20.glGenTextures(3, textureHandleA, 0);
-        final SurfaceTexture st = new SurfaceTexture(20, false);
-//        final SurfaceTexture st = new SurfaceTexture(0, false);
-        if (st != null) {
-            Surface surface = new Surface(st);
-            camera.setPreviewDisplay(surface);
+            // figure out width, height, and format
+            String json = camera.getSupportedSize();
+            JSONObject obj = new JSONObject(json);
+            JSONArray formats = obj.getJSONArray("formats");
+
+            int width = UVCCamera.DEFAULT_PREVIEW_WIDTH, height = UVCCamera.DEFAULT_PREVIEW_HEIGHT, formatId = 1;
+            for (int i = 0; i < formats.length(); i++) {
+                JSONObject format = formats.getJSONObject(i);
+                formatId = format.getInt("default");
+                JSONArray sizes = format.getJSONArray("size");
+                boolean foundPreferred = false;
+                for (int j = 0; j < sizes.length(); j++) {
+                    String sizeString = sizes.getString(j);
+                    int size[] = parseSize(sizeString);
+
+                    if (preferredWidth == size[0] && preferredHeight == size[1]) {
+                        foundPreferred = true;
+                    }
+
+                    // find the largest
+                    if (width < size[0]) {
+                        width = size[0];
+                        height = size[1];
+                    }
+                }
+
+                if (foundPreferred) {
+                    width = preferredWidth;
+                    height = preferredHeight;
+                }
+            }
+
+            this.camera.setPreviewSize(width, height, formatId);
+            this.camera.setFrameCallback(this, UVCCamera.PIXEL_FORMAT_YUV420SP);
+
+            final int[] textureHandle = new int[1];
+            GLES20.glGenTextures(1, textureHandle, 0);
+            final SurfaceTexture st = new SurfaceTexture(textureHandle[0], false);
+            //        final SurfaceTexture st = new SurfaceTexture(0, false);
+            if (st != null) {
+                previewSurface = new Surface(st);
+                camera.setPreviewDisplay(previewSurface);
+            }
+
+            this.camera.startPreview();
+            this.frameObserver.onCapturerStarted(true);
         }
-
-        this.camera.startPreview();
-        this.frameObserver.onCapturerStarted(true);
+        catch (UnsupportedOperationException e) {
+            Log.e(TAG, "Unable to connect to camera: " + e.toString());
+        }
+        catch (JSONException e) {
+            Log.e(TAG, "JSON exception: " + e.toString());
+        }
     }
 
     @Override
     public void onDisconnect(final UsbDevice device, final USBMonitor.UsbControlBlock ctrlBlock) {
         Log.v(TAG, "onDisconnect:");
-        this.camera.close();
+//        this.camera.close();
+        releaseCamera();
+        if (previewSurface != null) {
+            previewSurface.release();
+            previewSurface = null;
+        }
     }
 
     @Override
     public void onDettach(final UsbDevice device) {
 //			Toast.makeText(MainActivity.this, "USB_DEVICE_DETACHED", Toast.LENGTH_SHORT).show();
         Log.v(TAG, "onDettach:");
+        releaseCamera();
     }
 
     @Override
     public void onCancel(final UsbDevice device) {
         Log.v(TAG, "onCancel:");
+        releaseCamera();
     }
 
     public void onFrame(ByteBuffer frame) {
-        Log.v(TAG, "onFrame:");
+//        Log.v(TAG, "onFrame:");
         long captureTimeNs = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
         //byte data[] = frame.array();
         byte data[] = new byte[frame.remaining()];
@@ -215,6 +279,8 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
     private synchronized void releaseCamera() {
         if (camera != null) {
             try {
+                camera.stopPreview();
+                camera.setPreviewDisplay((Surface)null);
                 camera.setStatusCallback(null);
                 camera.setButtonCallback(null);
                 camera.close();
@@ -224,6 +290,18 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
             }
             camera = null;
         }
+    }
+
+    // parse string that looks like "1280x720"
+    private int[] parseSize(String size) {
+        int retval[] = new int[2];
+        String vals[] = size.split("x");
+        if (vals.length != 2) {
+            return retval;
+        }
+        retval[0] = Integer.parseInt(vals[0]);
+        retval[1] = Integer.parseInt(vals[1]);
+        return retval;
     }
 
 }

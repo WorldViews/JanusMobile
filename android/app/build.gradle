@@ -65,6 +65,11 @@ import com.android.build.OutputFile
  * ]
  */
 
+project.ext.react = [
+        bundleInDebug: false,
+]
+
+
 apply from: "../../node_modules/react-native/react.gradle"
 
 /**
@@ -129,7 +134,8 @@ dependencies {
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile project(':WebRTCModule')
     compile project(':react-native-toast')
-    compile project(':libuvccamera')
+    releaseCompile project(path:':libuvccamera',configuration:'release')
+    debugCompile project(path:':libuvccamera',configuration:'debug')
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
 }

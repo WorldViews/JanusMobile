@@ -10,7 +10,8 @@ const initialState = {
     videoURL: null,
     connected: false,
     janusURL: 'wss://sd6.dcpfs.net:8989/janus',
-    roomId: 9000
+    roomId: 9000,
+    useOTG: true
 }
 
 function actions(state = initialState, action) {
@@ -36,6 +37,11 @@ function actions(state = initialState, action) {
                 ...state,
                 videoURL: action.videoURL
             };
+        case types.USE_OTG_CAMERA:
+            return {
+                ...state,
+                useOTG: action.useOTG
+            }
         default:
             return state;
     }

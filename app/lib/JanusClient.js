@@ -17,12 +17,16 @@ class JanusClient {
         this.state = {};
     }
 
-    connect(url, username, password, roomId, cb) {
+    //connect(url, username, password, roomId, cb) {
+    connect(url, roomId, options) {
+        options = options || {};
+        this.options = options;
         this.state.url = url;
-        this.state.username = username;
-        this.state.password = password;
+        this.state.username = options.username || 'anon';
+        this.state.password = options.password || '';
+        this.state.useOTG = options.useOTG || false;
         this.state.roomId = roomId;
-        this.initWebRTC(cb);
+        this.initWebRTC(options.success);
     }
 
     disconnect() {
@@ -33,29 +37,30 @@ class JanusClient {
         let isFront = true;
         let self = this;
         MediaStreamTrack.getSources(sourceInfos => {
-        console.log(sourceInfos);
-        let videoSourceId = "UVCCamera";
-        // for (const i = 0; i < sourceInfos.length; i++) {
-        //     const sourceInfo = sourceInfos[i];
-        //     if (sourceInfo.kind == "video" && sourceInfo.facing == (isFront ? "front" : "back")) {
-        //     videoSourceId = sourceInfo.id;
-        //     }
-        // }
-        getUserMedia({
-            audio: true,
-            video: {
-            mandatory: {
-                minWidth: 640, // Provide your own width, height and frame rate here
-                minHeight: 480,
-                minFrameRate: 30
-            },
-            facingMode: (isFront ? "user" : "environment"),
-            optional: (videoSourceId ? [{ sourceId: videoSourceId }] : [])
-            }
-        }, function (stream) {
-            self.state.localStream = stream;
-            self.initJanus(self.state.url, cb);
-        }, console.error);
+          console.log(sourceInfos);
+          let videoSourceId = self.options.useOTG ? "UVCCamera" : undefined;
+          // for (const i = 0; i < sourceInfos.length; i++) {
+          //     const sourceInfo = sourceInfos[i];
+          //     if (sourceInfo.kind == "video" && sourceInfo.facing == (isFront ? "front" : "back")) {
+          //     videoSourceId = sourceInfo.id;
+          //     }
+          // }
+          let constraints = {
+              audio: true,
+              video: {
+              mandatory: {
+                  minWidth: 640, // Provide your own width, height and frame rate here
+                  minHeight: 480,
+                  minFrameRate: 30
+              },
+              facingMode: (isFront ? "user" : "environment"),
+              optional: (videoSourceId ? [{ sourceId: videoSourceId }] : [])
+              }
+          };
+          getUserMedia(constraints, function (stream) {
+              self.state.localStream = stream;
+              self.initJanus(self.state.url, cb);
+          }, console.error);
         });
     }
 
