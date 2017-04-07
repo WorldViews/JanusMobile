@@ -29,8 +29,6 @@ import { connect } from 'react-redux';
 //import Janus from 'janus-gateway';
 import Janus from './lib/janus'
 
-const { UVCCameraModule } = NativeModules;
-
 import { Match, MemoryRouter as Router } from 'react-router';
 
 import LoginView from './components/LoginView';
@@ -55,11 +53,6 @@ export default class JanusMobile extends Component {
       janusURL: 'wss://sd6.dcpfs.net:8989/janus',
       roomId: 9000
     };
-
-    var r = UVCCameraModule.getCameraList((cameraMap) => { 
-      console.log('getCameraList', cameraMap); 
-    });
-    //this.initWebRTC();
 
     let unsubscribe = store.subscribe(() => {
         let state = store.getState();
