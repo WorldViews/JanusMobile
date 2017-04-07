@@ -30,7 +30,10 @@ class VideoChatView extends Component {
     constructor(props) {
         super(props);
         //this.state = { username: '' };
-        this.state = {};
+        this.state = {
+          muteVideo: false,
+          muteAudio: false
+        };
         let self = this;
 
         //let state = this.props.getState();
@@ -55,11 +58,13 @@ class VideoChatView extends Component {
     }
 
     toggleAudio() {
-
+      this.setState({muteAudio: !this.state.muteAudio});
+      JanusClient.muteAudio(this.state.muteAudio);
     }
 
     toggleVideo() {
-
+      this.setState({muteVideo: !this.state.muteVideo});
+      JanusClient.muteVideo(this.state.muteVideo);
     }
 
     render() {
@@ -80,11 +85,25 @@ class VideoChatView extends Component {
                />
             )}
           </View>
-          <View style={styles.logout}>
+          <View style={styles.controls}>
+            <View style={styles.button}>
               <Button title="Logout"
                 color="red"
                 onPress={() => this.onLogout() }
               />
+            </View>
+            <View style={styles.button}>
+              <Button style={styles.button}  title="Video"
+                color={this.state.muteVideo ? "green" : "red"}
+                onPress={() => this.toggleVideo() }
+              />
+            </View>
+            <View style={styles.button}>
+              <Button style={styles.button}  title="Audio"
+                color={this.state.muteAudio ? "green" : "red"}
+                onPress={() => this.toggleAudio() }
+              />
+            </View>
           </View>
         </View>
         )
@@ -116,12 +135,15 @@ const styles = StyleSheet.create({
     color: '#cfc',
     margin: 10,
   },
+  button: {
+    margin: 5
+  },
   instructions: {
     textAlign: 'center',
     color: '#fff',
     marginBottom: 5,
   },
-  logout: {
+  controls: {
     position:'absolute',
     bottom:110,
     right:0,

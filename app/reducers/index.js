@@ -12,6 +12,8 @@ const initialState = {
     janusURL: 'wss://sd6.dcpfs.net:8989/janus',
     roomId: 9000,
     useOTG: true,
+    muteAudio: false,
+    muteVideo: false,
     streams: []
 }
 
@@ -52,6 +54,16 @@ function actions(state = initialState, action) {
             return {
                 ...state,
                 streams: state.streams.filter((s) => s.reactTag !== action.stream.reactTag)
+            };
+        case types.MUTE_AUDIO:
+            return {
+                ...state,
+                muteAudio: action.mute
+            };
+        case types.MUTE_VIDEO:
+            return {
+                ...state,
+                muteVideo: action.mute
             };
         default:
             return state;

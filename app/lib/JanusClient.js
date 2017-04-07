@@ -35,6 +35,18 @@ class JanusClient {
         this.janus.destroy();
     }
 
+    muteAudio(mute) {
+      this.state.localStream.getAudioTracks().forEach((t) => {
+        t.enabled = !mute;
+      });
+    }
+
+    muteVideo(mute) {
+      this.state.localStream.getVideoTracks().forEach((t) => {
+        t.enabled = !mute;
+      });
+    }
+
     initWebRTC(cb) {
         let isFront = true;
         let self = this;
