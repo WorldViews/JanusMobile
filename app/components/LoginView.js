@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
 
 import {
-    Button,
+    Image,
     StyleSheet,
     TextInput,
     Text,
     View
 } from 'react-native';
+
+import Button from 'react-native-button';
 
 import VideoChatView from './VideoChatView';
 
@@ -48,6 +50,9 @@ class LoginView extends Component {
     render() {
         return (
             <View style={styles.container}>
+                <Image style={styles.logo}
+                    source={require('../img/logo.png')}
+                    />
                 <Text style={styles.welcome}>
                     Janus Video Room
                 </Text>
@@ -76,11 +81,10 @@ class LoginView extends Component {
                         />
                 </View>
                 <Button
+                    activeOpacity={0.7}
+                    style={styles.login}
                     onPress={() => this.onLogin()}
-                    title="Login"
-                    color="#60DFE5"
-                    accessibilityLabel="Login"
-                />
+                >LOGIN</Button>
             </View>
         )
     }
@@ -102,9 +106,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'center',
         padding: 50,
         backgroundColor: '#4099ff',
+    },
+    logo: {
+        marginTop: 40
+    },
+    login: {
+        padding: 10,
+        backgroundColor: '#4c66a4',
+        width: 270,
+        color: '#fff',
+        borderRadius: 5,
+        borderWidth: 2,
+        borderColor: '#3c56b4'
     },
     input: {
         height: 60,
