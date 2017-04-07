@@ -32,6 +32,7 @@ class JanusClient {
     }
 
     disconnect() {
+        this.state.localStream.release();
         this.janus.destroy();
     }
 

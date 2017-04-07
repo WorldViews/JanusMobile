@@ -11,7 +11,7 @@ const initialState = {
     connected: false,
     janusURL: 'wss://sd6.dcpfs.net:8989/janus',
     roomId: 9000,
-    useOTG: true,
+    useOTG: false,
     muteAudio: false,
     muteVideo: false,
     streams: []

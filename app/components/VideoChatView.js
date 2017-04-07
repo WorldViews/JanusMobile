@@ -59,12 +59,12 @@ class VideoChatView extends Component {
 
     toggleAudio() {
       this.setState({muteAudio: !this.state.muteAudio});
-      JanusClient.muteAudio(this.state.muteAudio);
+      JanusClient.muteAudio(!this.state.muteAudio);
     }
 
     toggleVideo() {
       this.setState({muteVideo: !this.state.muteVideo});
-      JanusClient.muteVideo(this.state.muteVideo);
+      JanusClient.muteVideo(!this.state.muteVideo);
     }
 
     render() {
@@ -94,13 +94,13 @@ class VideoChatView extends Component {
             </View>
             <View style={styles.button}>
               <Button style={styles.button}  title="Video"
-                color={this.state.muteVideo ? "green" : "red"}
+                color={this.state.muteVideo ? "red" : "green"}
                 onPress={() => this.toggleVideo() }
               />
             </View>
             <View style={styles.button}>
               <Button style={styles.button}  title="Audio"
-                color={this.state.muteAudio ? "green" : "red"}
+                color={this.state.muteAudio ? "red" : "green"}
                 onPress={() => this.toggleAudio() }
               />
             </View>
