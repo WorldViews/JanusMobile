@@ -1842,7 +1842,7 @@ function Janus(gatewayCallbacks) {
                 if (config.mySdp === null || config.mySdp === undefined) {
                     Janus.log("Setting local description");
                     config.mySdp = answer.sdp;
-                    config.pc.setLocalDescription(answer);
+                    config.pc.setLocalDescription(answer, Janus.noop, Janus.noop);
                 }
                 if (!config.iceDone && !config.trickle) {
                     // Don't do anything until we have all candidates

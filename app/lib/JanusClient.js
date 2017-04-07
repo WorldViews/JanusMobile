@@ -26,6 +26,8 @@ class JanusClient {
         this.state.password = options.password || '';
         this.state.useOTG = options.useOTG || false;
         this.state.roomId = roomId;
+        this.state.opaqueId = "videoroom-" + Janus.randomString(12);
+
         this.initWebRTC(options.success);
     }
 
@@ -49,8 +51,8 @@ class JanusClient {
               audio: true,
               video: {
               mandatory: {
-                  minWidth: 640, // Provide your own width, height and frame rate here
-                  minHeight: 480,
+                  minWidth: 1280, // Provide your own width, height and frame rate here
+                  minHeight: 720,
                   minFrameRate: 30
               },
               facingMode: (isFront ? "user" : "environment"),
@@ -79,13 +81,98 @@ class JanusClient {
     });
   }
 
+  subscribeToFeeds(feeds) {
+    let self = this;
+    feeds.map(function(feed) {
+      self.subscribeFeed(feed);
+    });
+  }
+
+  subscribeFeed(feed) {
+    // A new feed has been published, create a new plugin handle and attach to it as a listener
+    var remoteFeed = null;
+    let self = this;
+    var currentStream = null;
+    this.janus.attach(
+      {
+        plugin: "janus.plugin.videoroom",
+        opaqueId: this.state.opaqueId,
+        success: function(pluginHandle) {
+          remoteFeed = pluginHandle;
+          Janus.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
+          Janus.log("  -- This is a subscriber");
+          // We wait for the plugin to send us an offer
+          var listen = { "request": "join", "room": self.state.roomId, "ptype": "listener", "feed": feed.id };
+          remoteFeed.send({"message": listen});
+        },
+        error: function(error) {
+          Janus.error("  -- Error attaching plugin...", error);
+        },
+        onmessage: function(msg, jsep) {
+          Janus.debug(" ::: Got a message (listener) :::");
+          Janus.debug(JSON.stringify(msg));
+          var event = msg["videoroom"];
+          Janus.debug("Event: " + event);
+          if(event != undefined && event != null) {
+            if(event === "attached") {
+              // Subscriber created and attached
+              Janus.log("Successfully attached to feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") in room " + msg["room"]);
+            } else if(msg["error"] !== undefined && msg["error"] !== null) {
+              Janus.alert(msg["error"]);
+            } else {
+              // What has just happened?
+            }
+          }
+          if(jsep !== undefined && jsep !== null) {
+            Janus.debug("Handling SDP as well...");
+            Janus.debug(jsep);
+            // Answer and attach
+            remoteFeed.createAnswer(
+              {
+                jsep: jsep,
+                // Add data:true here if you want to subscribe to datachannels as well
+                // (obviously only works if the publisher offered them in the first place)
+                media: { audioSend: false, videoSend: false },	// We want recvonly audio/video
+                success: function(jsep) {
+                  Janus.debug("Got SDP!");
+                  Janus.debug(jsep);
+                  var body = { "request": "start", "room": self.state.roomId };
+                  remoteFeed.send({"message": body, "jsep": jsep});
+                },
+                error: function(error) {
+                  Janus.error("WebRTC error:", error);
+                }
+              });
+          }
+        },
+        webrtcState: function(on) {
+          Janus.log("Janus says this WebRTC PeerConnection (feed #" + remoteFeed.rfindex + ") is " + (on ? "up" : "down") + " now");
+        },
+        onlocalstream: function(stream) {
+          // The subscriber stream is recvonly, we don't expect anything here
+        },
+        onremotestream: function(stream) {
+          Janus.log(" ::: Got a remote stream " + stream.id + " :::");
+          currentStream = stream;
+          if (self.options.onaddstream) {
+            self.options.onaddstream(currentStream);
+          }
+        },
+        oncleanup: function() {
+          Janus.log(" ::: Got a cleanup notification (remote feed " + feed.id + ") :::");
+          if (self.options.onremovestream) {
+            self.options.onremovestream(currentStream);
+          }
+        }
+      });
+  }
+
   attachVideoRoom(cb) {
     let self = this;
-    let opaqueId = "videoroom-" + Janus.randomString(12);
     self.janus.attach({
       plugin: "janus.plugin.videoroom",
       stream: self.state.localStream,
-      opaqueId: opaqueId,
+      opaqueId: this.state.opaqueId,
       success: function(pluginHandle) {
         // Step 1. Right after attaching to the plugin, we send a
         // request to join
@@ -134,6 +221,9 @@ class JanusClient {
       },
       webrtcState: function(on) {
         console.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+      },
+      onremotestream: function(stream) {
+        console.log("Remote stream");
       },
       onmessage: function (msg, jsep) {
         var event = msg.videoroom;
@@ -187,9 +277,11 @@ class JanusClient {
           });
 
           // // Step 5. Attach to existing feeds, if any
-          // if ((msg.publishers instanceof Array) && msg.publishers.length > 0) {
-          //   that.subscribeToFeeds(msg.publishers, that.room.id);
-          // }
+          if ((msg.publishers instanceof Array) && msg.publishers.length > 0) {
+              msg.publishers.map(function(feed) {
+                self.subscribeFeed(feed);
+              });
+          }
           // The room has been destroyed
         } else if (event === "destroyed") {
           console.log("The room has been destroyed!");

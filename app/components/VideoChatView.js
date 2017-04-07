@@ -42,7 +42,9 @@ class VideoChatView extends Component {
             self.setState({
                 videoURL: JanusClient.state.localStream.toURL()
             });
-          }
+          },
+          onaddstream: (stream) => this.props.dispatch(actions.addStream(stream)),
+          onremovestream: (stream) => this.props.dispatch(actions.removeStream(stream))
         });
     }
 
@@ -64,9 +66,21 @@ class VideoChatView extends Component {
         return (
         <View style={styles.container}>
           <RTCView style={styles.video}
-            objectFit="contain"
+            objectFit="cover"
+            zOrder={0}
             streamURL={this.state.videoURL}/>
-            <View style={styles.bottom}>
+          <View style={styles.videos}>
+            {this.props.streams.map((stream) =>
+              <RTCView 
+                key={stream.reactTag}
+                style={styles.smallVideo}
+                objectFit="cover"
+                zOrder={1}
+                streamURL={stream.toURL()}
+               />
+            )}
+          </View>
+          <View style={styles.logout}>
               <Button title="Logout"
                 color="red"
                 onPress={() => this.onLogout() }
@@ -82,7 +96,8 @@ function mapStateToProps(state, props) {
       janusURL: state.actions.janusURL, 
       username: state.actions.username,
       roomId: state.actions.roomId,
-      useOTG: state.actions.useOTG
+      useOTG: state.actions.useOTG,
+      streams: state.actions.streams
      };
 }
 
@@ -106,9 +121,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 5,
   },
-  bottom: {
+  logout: {
     position:'absolute',
-    bottom:30,
+    bottom:110,
     right:0,
     left:0,
     height:50,
@@ -118,6 +133,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
+  videos: {
+    position:'absolute',
+    bottom:0,
+    right:0,
+    left:0,
+    height:110,
+    opacity:1,
+    backgroundColor:'transparent',
+    flexDirection: 'row',
+  },  
   video: {
     position: 'absolute',
     left: 0,
@@ -127,4 +152,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  smallVideo: {
+    margin:5,
+    backgroundColor: '#000',
+    width: 100,
+    height: 100,
+    borderRadius: 5,
+  }
 });

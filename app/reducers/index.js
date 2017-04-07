@@ -11,7 +11,8 @@ const initialState = {
     connected: false,
     janusURL: 'wss://sd6.dcpfs.net:8989/janus',
     roomId: 9000,
-    useOTG: true
+    useOTG: true,
+    streams: []
 }
 
 function actions(state = initialState, action) {
@@ -41,7 +42,17 @@ function actions(state = initialState, action) {
             return {
                 ...state,
                 useOTG: action.useOTG
-            }
+            };
+        case types.ADD_STREAM:
+            return {
+                ...state,
+                streams: state.streams.concat(action.stream)
+            };
+        case types.REMOVE_STREAM:
+            return {
+                ...state,
+                streams: state.streams.filter((s) => s.reactTag !== action.stream.reactTag)
+            };
         default:
             return state;
     }
