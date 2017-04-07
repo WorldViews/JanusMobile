@@ -105,6 +105,7 @@ export default connect(mapStateToProps)(LoginView);
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
         padding: 50,
         backgroundColor: '#4099ff',
@@ -123,7 +124,6 @@ const styles = StyleSheet.create({
     },
     input: {
         height: 60,
-        width: 300,
         borderColor: '#aaa', 
         borderWidth: 1,
         borderRadius: 5,

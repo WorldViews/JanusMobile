@@ -52,5 +52,9 @@
 			</dict>
 		</dict>
 	</dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Microphone used to record audio for video conference</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Camera used to record video for video conference</string>
 </dict>
 </plist>
