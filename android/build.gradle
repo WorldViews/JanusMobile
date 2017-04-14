@@ -21,6 +21,7 @@ allprojects {
             url "$rootDir/../node_modules/react-native/android"
         }
         maven { url 'http://raw.github.com/saki4510t/libcommon/master/repository/' }
+        maven { url 'http://dl.bintray.com/steveliles/maven' }
     }
 }
 
