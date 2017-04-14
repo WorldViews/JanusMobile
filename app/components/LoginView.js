@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
         padding: 10,
         fontSize: 20,
         color: '#000',
+        width: '100%',
         backgroundColor: "#fff",
         marginTop: 10   ,
         marginBottom: 10
