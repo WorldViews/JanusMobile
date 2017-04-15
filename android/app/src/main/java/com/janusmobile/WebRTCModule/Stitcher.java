@@ -1,5 +1,9 @@
 package com.janusmobile.WebRTCModule;
 
+import android.util.Log;
+
+import org.opencv.android.OpenCVLoader;
+
 /**
      Convert dual fisheye image to equirectangular.
  */
@@ -15,11 +19,13 @@ import static org.opencv.core.CvType.CV_8UC3;
 
 public class Stitcher {
 
+    private static final String TAG = "Stitcher";
+
     private Mat xMap;
     private Mat yMap;
 
-    private int viewWidth;
-    private int viewHeight;
+    private int viewWidth = 1280;
+    private int viewHeight = 720;
 
     private double rmax;
     private double phiMax;
@@ -41,7 +47,13 @@ public class Stitcher {
 
     public Stitcher(double cx, double cy, double cx2, double cy2, double rmax, int viewHeight, int viewWidth) {
 
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        //System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+
+        if (OpenCVLoader.initDebug()) {
+            // do some opencv stuff
+            Log.d(TAG, "OpenCV Loaded");
+        }
+
 
         this.cx = cx;
         this.cy = cy;
@@ -152,6 +164,7 @@ public class Stitcher {
                 x = rxy * Math.cos(yaw);
                 y = rxy * Math.sin(yaw);
                 //  END sph_yaw_phi_r_to_xyz(yaw, phi, 1, x, y, z);
+                /*
                 Mat p1 = new Mat(1, 3, CV_32FC1);
                 p1.put(0, 0, x);
                 p1.put(1, 0, y);
@@ -164,6 +177,7 @@ public class Stitcher {
                 y = d[0];
                 d = p2.get(0, 2);
                 z = d[0];
+*/
                 //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, phi2);
                 r = Math.sqrt(x * x + y * y + z * z);
                 yaw = Math.atan2(y, x);
@@ -211,6 +225,7 @@ public class Stitcher {
                 yMap.put(j, i, fy);
             }
         }
+        needMap = false;
     }
 
     void stitch(Mat src, Mat dst)
@@ -238,6 +253,7 @@ public class Stitcher {
         stitch(mSrcRGB, mDstRGB);
         Imgproc.cvtColor(mDstRGB, mDstYUV, Imgproc.COLOR_RGB2YUV_I420);
 
-        System.arraycopy(mDstYUV.dataAddr(), 0, dst, 0, (height + height / 2) * width);
+//        System.arraycopy(mDstYUV.dataAddr(), 0, dst, 0, (height + height / 2) * width);
+        mDstYUV.get(0, 0, dst);
     }
 }

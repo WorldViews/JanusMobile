@@ -51,6 +51,11 @@ import org.webrtc.VideoCapturer.CapturerObserver;
 
 import com.janusmobile.WebRTCModule.Stitcher;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
+
 import org.webrtc.VideoCapturer;
 
 public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.OnDeviceConnectListener, IFrameCallback {
@@ -86,6 +91,7 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
         }
 
         this.stitcher = new Stitcher(318.6, 318.8, 959.5, 318.9, 283.5, 720, 1280);
+        this.stitcher.generateMap();
 
         this.frameObserver = frameObserver;
         this.applicationContext = applicationContext;
@@ -275,14 +281,22 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     public void onFrame(ByteBuffer frame) {
 //        Log.v(TAG, "onFrame:");
-        long captureTimeNs = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
-        //byte data[] = frame.array();
         byte data[] = new byte[frame.remaining()];
         frame.get(data);
-        byte equiData[] = new byte[2048 * ( 1024 + 1024 / 2)];
-        stitcher.stitch(720, 1280, data, equiData);
-        //this.frameObserver.onByteBufferFrameCaptured(data, 1280, 720, 0, captureTimeNs);
-        this.frameObserver.onByteBufferFrameCaptured(equiData, 1280, 720, 0, captureTimeNs);
+        long captureTimeNs = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
+
+        try {
+            //byte data[] = frame.array();
+            byte equiData[] = new byte[1280 * (720 + 720 / 2)];
+            stitcher.stitch(720, 1280, data, equiData);
+            //this.frameObserver.onByteBufferFrameCaptured(data, 1280, 720, 0, captureTimeNs);
+            this.frameObserver.onByteBufferFrameCaptured(equiData, 1280, 720, 0, captureTimeNs);
+        } catch (Exception e) {
+            Logger logger = Logger.getAnonymousLogger();
+            logger.log(Level.SEVERE, "an exception was thrown", e);
+            this.frameObserver.onByteBufferFrameCaptured(data, 1280, 720, 0, captureTimeNs);
+
+        }
     }
 
     private synchronized void releaseCamera() {
