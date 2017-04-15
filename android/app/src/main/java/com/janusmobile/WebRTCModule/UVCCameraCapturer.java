@@ -49,6 +49,8 @@ import org.webrtc.CameraVideoCapturer.CameraSwitchHandler;
 import org.webrtc.SurfaceTextureHelper.OnTextureFrameAvailableListener;
 import org.webrtc.VideoCapturer.CapturerObserver;
 
+import com.janusmobile.WebRTCModule.Stitcher;
+
 import org.webrtc.VideoCapturer;
 
 public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.OnDeviceConnectListener, IFrameCallback {
@@ -68,6 +70,8 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     private Surface previewSurface;
 
+    Stitcher stitcher;
+
     public void initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, CapturerObserver frameObserver) {
         Logging.d("UVCCameraCapturer", "initialize");
 
@@ -80,6 +84,8 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
         if (isInitialized()) {
             throw new IllegalStateException("Already initialized");
         }
+
+        this.stitcher = new Stitcher(318.6, 318.8, 959.5, 318.9, 283.5, 720, 1280);
 
         this.frameObserver = frameObserver;
         this.applicationContext = applicationContext;
@@ -273,7 +279,10 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
         //byte data[] = frame.array();
         byte data[] = new byte[frame.remaining()];
         frame.get(data);
-        this.frameObserver.onByteBufferFrameCaptured(data, 1280, 720, 0, captureTimeNs);
+        byte equiData[] = new byte[2048 * ( 1024 + 1024 / 2)];
+        stitcher.stitch(720, 1280, data, equiData);
+        //this.frameObserver.onByteBufferFrameCaptured(data, 1280, 720, 0, captureTimeNs);
+        this.frameObserver.onByteBufferFrameCaptured(equiData, 1280, 720, 0, captureTimeNs);
     }
 
     private synchronized void releaseCamera() {
