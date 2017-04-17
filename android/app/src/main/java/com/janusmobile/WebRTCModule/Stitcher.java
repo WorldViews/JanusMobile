@@ -1,22 +1,22 @@
 package com.janusmobile.WebRTCModule;
 
 import android.util.Log;
-
 import org.opencv.android.OpenCVLoader;
-
-/**
-     Convert dual fisheye image to equirectangular.
- */
-
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-
+import java.util.Arrays;
 import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_32FC1;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
+import java.util.ArrayList;
+
+/**
+ Convert dual fisheye image to equirectangular.
+ */
 
 public class Stitcher {
 
@@ -41,10 +41,24 @@ public class Stitcher {
 
     private boolean needMap = true;
 
-    Mat mSrcYUV = null;
-    Mat mSrcRGB = null;
-    Mat mDstYUV = null;
-    Mat mDstRGB = null;
+    byte[] ySrc = null;
+    byte[] uSrc = null;
+    byte[] vSrc = null;
+
+    Mat mSrcY = null;
+    Mat mSrcUsmall = null;
+    Mat mSrcVsmall = null;
+    Mat mSrcU = new Mat();
+    Mat mSrcV = new Mat();
+    Mat mSrcYUV = new Mat();
+
+    Mat mDstYUV = new Mat();
+    Mat mDstUsmall = new Mat();
+    Mat mDstVsmall = new Mat();
+
+    byte[] yDst = null;
+    byte[] uDst = null;
+    byte[] vDst = null;
 
     public Stitcher(double cx, double cy, double cx2, double cy2, double rmax, int viewHeight, int viewWidth) {
 
@@ -54,7 +68,6 @@ public class Stitcher {
             // do some opencv stuff
             Log.d(TAG, "OpenCV Loaded");
         }
-
 
         this.cx = cx;
         this.cy = cy;
@@ -242,19 +255,69 @@ public class Stitcher {
     void stitch(int height, int width, byte[] src, byte[] dst)
     {
 
-        if (mSrcYUV == null) {
-            mSrcYUV = new Mat(height + height / 2, width, CV_8UC1);
-            mSrcRGB = new Mat(height, width, CV_8UC3);
-            mDstRGB = new Mat(viewHeight, viewWidth, CV_8UC3);
-            mDstYUV = new Mat(viewHeight + viewHeight / 2, viewWidth, CV_8UC1);
-        }
+        /*
+        Create a YUV image from the I420
+         */
 
-        mSrcYUV.put(0, 0, src);
-        Imgproc.cvtColor(mSrcYUV, mSrcRGB, Imgproc.COLOR_YUV2RGB_I420);
-        stitch(mSrcRGB, mDstRGB);
-        Imgproc.cvtColor(mDstRGB, mDstYUV, Imgproc.COLOR_RGB2YUV_I420);
+        ySrc = Arrays.copyOf(src, height*width);
+        int start = height * width;
+        uSrc = Arrays.copyOfRange(src, start, start + height * width/ 4);
+        start += height * width / 4;
+        vSrc = Arrays.copyOfRange(src, start, start + height * width/ 4);
 
-//        System.arraycopy(mDstYUV.dataAddr(), 0, dst, 0, (height + height / 2) * width);
-        mDstYUV.get(0, 0, dst);
+        if (mSrcY == null)
+            mSrcY = new Mat(height, width, CV_8UC1);
+        mSrcY.put(0, 0, src);
+
+        if (mSrcUsmall == null)
+            mSrcUsmall = new Mat(height/2, width/2, CV_8UC1);
+        mSrcUsmall.put(0, 0, uSrc);
+        Imgproc.resize(mSrcUsmall, mSrcU, new Size(height, width));
+
+        if (mSrcVsmall == null)
+            mSrcVsmall = new Mat(height/2, width/2, CV_8UC1);
+        mSrcVsmall.put(0, 0, vSrc);
+        Imgproc.resize(mSrcVsmall, mSrcV, new Size(height, width));
+
+        ArrayList<Mat> srcChannels = new ArrayList();
+        srcChannels.add(0, mSrcY);
+        srcChannels.add(1, mSrcU);
+        srcChannels.add(2, mSrcV);
+
+        Core.merge(srcChannels, mSrcYUV);
+
+        /*
+        Process the YUV image
+         */
+        stitch(mSrcYUV, mDstYUV);
+
+        /*
+         Create I420 image from the YUV
+         */
+
+        ArrayList<Mat> dstChanels = new ArrayList();
+        Core.split(mDstYUV, dstChanels);
+
+        Imgproc.resize(dstChanels.get(1), mDstUsmall, new Size(height/2, width/2));
+        Imgproc.resize(dstChanels.get(2), mDstVsmall, new Size(height/2, width/2));
+
+        if (yDst == null)
+            yDst = new byte[height*width];
+        dstChanels.get(0).get(0, 0, yDst);
+
+        if (uDst == null)
+            uDst = new byte[height*width/4];
+        mDstUsmall.get(0, 0, uDst);
+
+        if (vDst == null)
+            vDst = new byte[height*width/4];
+        mDstVsmall.get(0, 0, vDst);
+
+        start = 0;
+        System.arraycopy(yDst, 0, dst, start, yDst.length);
+        start += yDst.length;
+        System.arraycopy(uDst, 0, dst, start, uDst.length);
+        start += uDst.length;
+        System.arraycopy(vDst, 0, dst, start, vDst.length);
     }
 }
