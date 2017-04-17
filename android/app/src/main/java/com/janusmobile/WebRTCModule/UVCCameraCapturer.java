@@ -91,6 +91,7 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
         }
 
         this.stitcher = new Stitcher(318.6, 318.8, 959.5, 318.9, 283.5, 720, 1280);
+        this.stitcher.setRotation(0, -Math.PI, 0);
         this.stitcher.generateMap();
 
         this.frameObserver = frameObserver;

@@ -13,6 +13,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_32FC1;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
@@ -36,7 +37,7 @@ public class Stitcher {
     private double yaw_radiansPerPixel;
     private double phi_radiansPerPixel;
 
-    private Mat RM_inv;
+    private Mat RM_inv = Mat.eye(3, 3, CV_32F);
 
     private boolean needMap = true;
 
@@ -164,7 +165,7 @@ public class Stitcher {
                 x = rxy * Math.cos(yaw);
                 y = rxy * Math.sin(yaw);
                 //  END sph_yaw_phi_r_to_xyz(yaw, phi, 1, x, y, z);
-                /*
+
                 Mat p1 = new Mat(1, 3, CV_32FC1);
                 p1.put(0, 0, x);
                 p1.put(1, 0, y);
@@ -177,7 +178,7 @@ public class Stitcher {
                 y = d[0];
                 d = p2.get(0, 2);
                 z = d[0];
-*/
+
                 //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, phi2);
                 r = Math.sqrt(x * x + y * y + z * z);
                 yaw = Math.atan2(y, x);
