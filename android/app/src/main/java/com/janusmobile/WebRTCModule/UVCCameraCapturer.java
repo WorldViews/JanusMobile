@@ -75,7 +75,8 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     private Surface previewSurface;
 
-    Stitcher stitcher;
+    private Stitcher stitcher;
+    private byte[] equiData = null;
 
     public void initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, CapturerObserver frameObserver) {
         Logging.d("UVCCameraCapturer", "initialize");
@@ -287,10 +288,9 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
         long captureTimeNs = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
 
         try {
-            //byte data[] = frame.array();
-            byte equiData[] = new byte[1280 * (720 + 720 / 2)];
-            stitcher.stitch(720, 1280, data, equiData);
-            //this.frameObserver.onByteBufferFrameCaptured(data, 1280, 720, 0, captureTimeNs);
+            if (equiData == null)
+                equiData[] = new byte[(1280 * 720 * 3)/2];
+            stitcher.stitch(1280, 720, data, equiData);
             this.frameObserver.onByteBufferFrameCaptured(equiData, 1280, 720, 0, captureTimeNs);
         } catch (Exception e) {
             Logger logger = Logger.getAnonymousLogger();

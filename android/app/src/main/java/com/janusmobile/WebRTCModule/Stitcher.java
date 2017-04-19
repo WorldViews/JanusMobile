@@ -10,9 +10,15 @@ import org.opencv.imgproc.Imgproc;
 import java.util.Arrays;
 import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_32FC1;
+import static org.opencv.core.CvType.CV_64F;
+import static org.opencv.core.CvType.CV_64FC1;
 import static org.opencv.core.CvType.CV_8UC1;
 import static org.opencv.core.CvType.CV_8UC3;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.List.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  Convert dual fisheye image to equirectangular.
@@ -30,15 +36,13 @@ public class Stitcher {
 
     private double rmax;
     private double phiMax;
-    //private double yawMax;
 
     private double cx, cy, cx2, cy2;
 
     private double yaw_radiansPerPixel;
     private double phi_radiansPerPixel;
 
-    private Mat RM_inv = Mat.eye(3, 3, CV_32F);
-
+    private Mat RM_inv = null;
     private boolean needMap = true;
 
     byte[] ySrc = null;
@@ -48,19 +52,19 @@ public class Stitcher {
     Mat mSrcY = null;
     Mat mSrcUsmall = null;
     Mat mSrcVsmall = null;
-    Mat mSrcU = new Mat();
-    Mat mSrcV = new Mat();
-    Mat mSrcYUV = new Mat();
+    Mat mSrcU = null;
+    Mat mSrcV = null;
+    Mat mSrcYUV = null;
 
-    Mat mDstYUV = new Mat();
-    Mat mDstUsmall = new Mat();
-    Mat mDstVsmall = new Mat();
+    Mat mDstYUV = null;
+    Mat mDstUsmall = null;
+    Mat mDstVsmall = null;
 
     byte[] yDst = null;
     byte[] uDst = null;
     byte[] vDst = null;
 
-    public Stitcher(double cx, double cy, double cx2, double cy2, double rmax, int viewHeight, int viewWidth) {
+    public Stitcher(double cx, double cy, double cx2, double cy2, double rmax, int viewWidth, int viewHeight) {
 
         //System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
@@ -68,6 +72,18 @@ public class Stitcher {
             // do some opencv stuff
             Log.d(TAG, "OpenCV Loaded");
         }
+
+        yMap = new Mat();
+        xMap = new Mat();
+
+        mSrcU = new Mat();
+        mSrcV = new Mat();
+        mDstYUV = new Mat();
+        mDstUsmall = new Mat();
+        mDstVsmall = new Mat();
+
+        RM_inv = new Mat();
+        RM_inv = Mat.eye(3,3, CV_64F);
 
         this.cx = cx;
         this.cy = cy;
@@ -79,7 +95,6 @@ public class Stitcher {
         this.viewHeight = viewHeight;
 
         phiMax = Math.PI / 2.0;
-        //yawMax = Math.PI;
         //fisheyeAspect = 1.0;
         //fisheyeBackRot = 0.0;
         needMap = true;
@@ -93,7 +108,7 @@ public class Stitcher {
 
     Mat getRx(double a)
     {
-        Mat R = new Mat(3, 3, CV_32FC1);
+        Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, 1);
         R.put(0, 1, 0);
         R.put(0, 2, 0);
@@ -108,7 +123,7 @@ public class Stitcher {
 
     Mat getRy(double a)
     {
-        Mat R = new Mat(3, 3, CV_32FC1);
+        Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, Math.cos(a));
         R.put(0, 1, 0);
         R.put(0, 2, Math.sin(a));
@@ -123,7 +138,7 @@ public class Stitcher {
 
     Mat getRz(double a)
     {
-        Mat R = new Mat(3, 3, CV_32FC1);
+        Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, Math.cos(a));
         R.put(0, 1, -Math.sin(a));
         R.put(0, 2, 0);
@@ -181,9 +196,10 @@ public class Stitcher {
 
                 Mat p1 = new Mat(1, 3, CV_32FC1);
                 p1.put(0, 0, x);
-                p1.put(1, 0, y);
-                p1.put(2, 0, z);
-                Mat p2 = RM_inv.mul(p1);
+                p1.put(0, 1, y);
+                p1.put(0, 2, z);
+                Mat p2 = new Mat();
+                p2 = RM_inv.mul(p1);
                 double[] d;
                 d = p2.get(0, 0);
                 x = d[0];
@@ -201,7 +217,7 @@ public class Stitcher {
                 else {
                     phi = Math.acos(z / r);
                 }
-                //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, phi2);
+                //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, phi2); Array
 
                 // END rotate_yaw_phi(yaw, phi, yaw, phi);
                 // BEGIN yaw_phi_to_ixy(yaw, phi, x, y);
@@ -214,11 +230,12 @@ public class Stitcher {
                     //yaw += fisheyeBackRot;
                     //double r = phi_to_r(M_PI - phi);
                     r = (Math.PI - phi) * rmax / phiMax;
-                    //double r = phi_to_r(M_PI - phi);
+                    //double r = phi_to_r(M_PI - phi);        //mSrcYUV = new Mat();
+
 
                     ix = cx2 - cx - r * Math.sin(yaw); // * fisheyeAspect;
                     iy = r * Math.cos(yaw) + cy2 - cy;
-                }
+               }
                 else {
                     // BEGIN double r = phi_to_r(phi);
                     r = phi * rmax / phiMax;
@@ -226,6 +243,7 @@ public class Stitcher {
 
                     ix = r * Math.sin(yaw); // * fisheyeAspect;
                     iy = r * Math.cos(yaw);
+
                 }
                 // END yaw_phi_to_ixy(yaw, phi, x, y);
 
@@ -252,7 +270,7 @@ public class Stitcher {
         Imgproc.remap(src, dst, xMap, yMap, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT, color);
     }
 
-    void stitch(int height, int width, byte[] src, byte[] dst)
+    void stitch(int width, int height, byte[] src, byte[] dst)
     {
 
         /*
@@ -261,29 +279,31 @@ public class Stitcher {
 
         ySrc = Arrays.copyOf(src, height*width);
         int start = height * width;
-        uSrc = Arrays.copyOfRange(src, start, start + height * width/ 4);
-        start += height * width / 4;
-        vSrc = Arrays.copyOfRange(src, start, start + height * width/ 4);
+        uSrc = Arrays.copyOfRange(src, start, start + (height * width)/ 4);
+        start += (height * width) / 4;
+        vSrc = Arrays.copyOfRange(src, start, start + (height * width)/ 4);
 
         if (mSrcY == null)
             mSrcY = new Mat(height, width, CV_8UC1);
-        mSrcY.put(0, 0, src);
+
+        mSrcY.put(0, 0, ySrc);
 
         if (mSrcUsmall == null)
             mSrcUsmall = new Mat(height/2, width/2, CV_8UC1);
+
         mSrcUsmall.put(0, 0, uSrc);
-        Imgproc.resize(mSrcUsmall, mSrcU, new Size(height, width));
+        Imgproc.resize(mSrcUsmall, mSrcU, new Size(width, height));
 
         if (mSrcVsmall == null)
             mSrcVsmall = new Mat(height/2, width/2, CV_8UC1);
+
         mSrcVsmall.put(0, 0, vSrc);
-        Imgproc.resize(mSrcVsmall, mSrcV, new Size(height, width));
+        Imgproc.resize(mSrcVsmall, mSrcV, new Size(width, height));
 
-        ArrayList<Mat> srcChannels = new ArrayList();
-        srcChannels.add(0, mSrcY);
-        srcChannels.add(1, mSrcU);
-        srcChannels.add(2, mSrcV);
+        if (mSrcYUV == null)
+            mSrcYUV = new Mat();
 
+        List<Mat> srcChannels = Arrays.asList(mSrcY, mSrcU, mSrcV);
         Core.merge(srcChannels, mSrcYUV);
 
         /*
@@ -294,23 +314,24 @@ public class Stitcher {
         /*
          Create I420 image from the YUV
          */
-
-        ArrayList<Mat> dstChanels = new ArrayList();
+        ArrayList<Mat> dstChanels = new ArrayList<Mat>();
         Core.split(mDstYUV, dstChanels);
-
-        Imgproc.resize(dstChanels.get(1), mDstUsmall, new Size(height/2, width/2));
-        Imgproc.resize(dstChanels.get(2), mDstVsmall, new Size(height/2, width/2));
 
         if (yDst == null)
             yDst = new byte[height*width];
+
         dstChanels.get(0).get(0, 0, yDst);
 
         if (uDst == null)
             uDst = new byte[height*width/4];
+
+        Imgproc.resize(dstChanels.get(1), mDstUsmall, new Size(height/2, width/2));
         mDstUsmall.get(0, 0, uDst);
 
         if (vDst == null)
             vDst = new byte[height*width/4];
+
+        Imgproc.resize(dstChanels.get(2), mDstVsmall, new Size(height/2, width/2));
         mDstVsmall.get(0, 0, vDst);
 
         start = 0;
@@ -319,5 +340,8 @@ public class Stitcher {
         System.arraycopy(uDst, 0, dst, start, uDst.length);
         start += uDst.length;
         System.arraycopy(vDst, 0, dst, start, vDst.length);
+
+        Logger logger = Logger.getAnonymousLogger();
+        logger.log(Level.SEVERE, String.format("Lengths Y %d U %d V %d", yDst.length, uDst.length, vDst.length));
     }
 }
