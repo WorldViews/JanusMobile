@@ -91,15 +91,15 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
             throw new IllegalStateException("Already initialized");
         }
 
-        this.stitcher = new Stitcher(318.6, 318.8, 959.5, 318.9, 283.5, 720, 1280);
+        this.stitcher = new Stitcher(318.6, 318.8, 959.5, 318.9, 283.5, 1280, 720);
         this.stitcher.setRotation(0, -Math.PI, 0);
-        this.stitcher.generateMap();
 
         this.frameObserver = frameObserver;
         this.applicationContext = applicationContext;
 
         this.cameraThreadHandler = surfaceTextureHelper == null ? null : surfaceTextureHelper.getHandler();
     }
+
 
     public void startCapture(final int width, final int height, final int framerate) {
         Logging.d("UVCCameraCapturer", String.format("startCapture %d %d %d", width, height, framerate));
@@ -113,6 +113,7 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
         usbMonitor = new USBMonitor(this.applicationContext, this);
         usbMonitor.register();
+
 //        this.thread = new Thread(this);
 //        this.thread.start();
 //        this.frameObserver.onCapturerStarted(true);
@@ -120,15 +121,16 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     public void stopCapture() throws InterruptedException {
         Logging.d("UVCCameraCapturer", "stopCapture");
-        usbMonitor.unregister();
         releaseCamera();
         if (previewSurface != null) {
             previewSurface.release();
             previewSurface = null;
         }
         if (this.usbMonitor != null) {
+            usbMonitor.unregister();
             this.usbMonitor.destroy();
         }
+
 //        isCameraRunning.getAndSet(false);
 //        this.thread.wait();
 //        this.frameObserver.onCapturerStopped();
@@ -155,16 +157,29 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
     }
 
     public void run() {
-        byte[] data = new byte[(320*200*3)/2];
-        for (int i = 0; i < 320*200; i++) {
-            data[i] = (byte)0xff;
+        int width = 1280;
+        int height = 720;
+
+        int start = 0;
+        byte[] data = new byte[(width*height*3)/2];
+        for (int i = 0; i < width*height; i++) {
+            data[i] = (byte)76;
         }
+
+        for (int i = width*height; i < data.length; i += 2) {
+            data[i] = (byte)255;
+            data[i+1] = (byte)84;
+        }
+
+        byte[] dst = new byte[data.length];
+
         while (isCameraRunning.get()) {
             Logging.d("UVCCameraCapturer", "captureFrame");
             try {
                 long captureTimeNs = TimeUnit.MILLISECONDS.toNanos(SystemClock.elapsedRealtime());
+                stitcher.stitch(width, height, data, dst);
                 this.frameObserver.onByteBufferFrameCaptured(
-                        data, 320, 200, 0, captureTimeNs);
+                        dst, width, height, 0, captureTimeNs);
                 this.thread.sleep(100);
 
             } catch (InterruptedException e) {
@@ -289,7 +304,7 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
         try {
             if (equiData == null)
-                equiData[] = new byte[(1280 * 720 * 3)/2];
+                equiData = new byte[(1280 * 720 * 3)/2];
             stitcher.stitch(1280, 720, data, equiData);
             this.frameObserver.onByteBufferFrameCaptured(equiData, 1280, 720, 0, captureTimeNs);
         } catch (Exception e) {
