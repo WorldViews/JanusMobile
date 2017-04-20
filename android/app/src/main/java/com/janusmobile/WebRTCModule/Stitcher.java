@@ -10,15 +10,10 @@ import org.opencv.imgproc.Imgproc;
 import java.util.Arrays;
 import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_32FC1;
-import static org.opencv.core.CvType.CV_64F;
-import static org.opencv.core.CvType.CV_64FC1;
 import static org.opencv.core.CvType.CV_8UC1;
-import static org.opencv.core.CvType.CV_8UC3;
-import static org.opencv.imgcodecs.Imgcodecs.imread;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.List.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -85,7 +80,7 @@ public class Stitcher {
         mDstVsmall = new Mat();
 
         RM_inv = new Mat();
-        RM_inv = Mat.eye(3,3, CV_64F);
+        RM_inv = Mat.eye(3,3, CV_32F);
 
         this.cx = cx;
         this.cy = cy;
@@ -110,7 +105,7 @@ public class Stitcher {
 
     Mat getRx(double a)
     {
-        Mat R = new Mat(3, 3, CV_64F);
+        Mat R = new Mat(3, 3, CV_32F);
         R.put(0, 0, 1);
         R.put(0, 1, 0);
         R.put(0, 2, 0);
@@ -125,7 +120,7 @@ public class Stitcher {
 
     Mat getRy(double a)
     {
-        Mat R = new Mat(3, 3, CV_64F);
+        Mat R = new Mat(3, 3, CV_32F);
         R.put(0, 0, Math.cos(a));
         R.put(0, 1, 0);
         R.put(0, 2, Math.sin(a));
@@ -140,7 +135,7 @@ public class Stitcher {
 
     Mat getRz(double a)
     {
-        Mat R = new Mat(3, 3, CV_64F);
+        Mat R = new Mat(3, 3, CV_32F);
         R.put(0, 0, Math.cos(a));
         R.put(0, 1, -Math.sin(a));
         R.put(0, 2, 0);
@@ -175,9 +170,15 @@ public class Stitcher {
 
     void generateMap()
     {
+        Mat I = new Mat();
+        //I = Mat.eye(3, 3, CV_32F);
+        Mat p1 = new Mat(1, 3, CV_32F);
+        Mat p2 = new Mat(1, 3, CV_32F);
+        double[] d;
+
         try {
-            for (int i = 0; i < viewHeight; i++) {
-                for (int j = 0; j < viewWidth; j++) {
+            for (int i = 0; i < viewWidth; i++) {
+                for (int j = 0; j < viewHeight; j++) {
                     //BEGIN transform_yawphi_to_fisheye(viewWidth - i, j, fx, fy);
                     double ix, iy, x, y, z, yaw, phi, fx, fy;
 
@@ -187,7 +188,6 @@ public class Stitcher {
                     phi = +iy * phi_radiansPerPixel;
 
                     // BEGIN rotate_yaw_phi(yaw, phi, yaw, phi);
-
                     //  BEGIN sph_yaw_phi_r_to_xyz(yaw, phi, 1, x, y, z);
                     double r = 1;
                     z = r * Math.cos(phi);          // height of the point.
@@ -196,19 +196,17 @@ public class Stitcher {
                     y = rxy * Math.sin(yaw);
                     //  END sph_yaw_phi_r_to_xyz(yaw, phi, 1, x, y, z);
 /*
-
-                    Mat p1 = new Mat(1, 3, CV_64F);
                     p1.put(0, 0, x);
                     p1.put(0, 1, y);
                     p1.put(0, 2, z);
-                    Mat p2 = new Mat(1, 3, CV_64F);
-                    Core.gemm(p1, RM_inv, 1, new Mat(), 0, p2);
-                    double[] d;
-                    d = p2.get(0, 1);
+                    //Core.gemm(p1, RM_inv, 1, I, 0, p2);
+                    Core.gemm(p1, RM_inv, 1,new Mat(), 0, p2);
+
+                    d = p2.get(0, 0);
                     x = d[0];
-                    d = p2.get(0, 2);
+                    d = p2.get(0, 1);
                     y = d[0];
-                    d = p2.get(0, 3);
+                    d = p2.get(0, 2);
                     z = d[0];
 */
                     //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, phi2);
@@ -220,8 +218,8 @@ public class Stitcher {
                         phi = Math.acos(z / r);
                     }
                     //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, pfinal_mathi2); Array
-
                     // END rotate_yaw_phi(yaw, phi, yaw, phi);
+
                     // BEGIN yaw_phi_to_ixy(yaw, phi, x, y);
                     if (phi < 0) {
                         phi = -phi;
@@ -251,6 +249,7 @@ public class Stitcher {
                     fy = iy + cy;
                     // END xy_to_ij(x, y, fx, fy);
                     //END transform_yawphi_to_fisheye(viewWidth - i, j, fx, fy);
+
                     xMap.put(j, i, fx);
                     yMap.put(j, i, fy);
                 }
@@ -274,7 +273,9 @@ public class Stitcher {
 
     void stitch(int width, int height, byte[] src, byte[] dst)
     {
-        // Create a YUV image from the I420sp
+        // Create a YUV image from the I420sp.   This format is a plane height*width
+        // of Y, followed by a plane of interleaved V and U, sub-sampled by 2 in each
+        // direction.
 
         if (mSrcY == null)
             mSrcY = new Mat(height, width, CV_8UC1);
