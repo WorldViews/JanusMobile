@@ -71,7 +71,7 @@ class VideoChatView extends Component {
         return (
         <View style={styles.container}>
           <RTCView style={styles.video}
-            objectFit="cover"
+            objectFit="contain"
             zOrder={0}
             streamURL={this.state.videoURL}/>
           <View style={styles.videos}>
@@ -79,7 +79,7 @@ class VideoChatView extends Component {
               <RTCView 
                 key={stream.reactTag}
                 style={styles.smallVideo}
-                objectFit="cover"
+                objectFit="contain"
                 zOrder={1}
                 streamURL={stream.toURL()}
                />
