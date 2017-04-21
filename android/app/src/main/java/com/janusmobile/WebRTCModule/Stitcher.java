@@ -11,6 +11,7 @@ import java.util.Arrays;
 import static org.opencv.core.CvType.CV_32F;
 import static org.opencv.core.CvType.CV_32FC1;
 import static org.opencv.core.CvType.CV_8UC1;
+import static org.opencv.imgcodecs.Imgcodecs.imwrite;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +102,12 @@ public class Stitcher {
 
         yaw_radiansPerPixel = 2 * Math.PI / (float) viewWidth;
         phi_radiansPerPixel = Math.PI / (float) viewHeight;
+
+
+        float[] upRight =  new float[]  {0, -1,  0,
+                                        0,   0, -1,
+                                        1,   0,  0};
+        RM_inv.put(0, 0, upRight);
     }
 
     Mat getRx(double a)
@@ -115,6 +122,7 @@ public class Stitcher {
         R.put(2, 0, 0);
         R.put(2, 1, Math.sin(a));
         R.put(2, 2, Math.cos(a));
+        String s = R.dump();
         return R;
     }
 
@@ -130,6 +138,7 @@ public class Stitcher {
         R.put(2, 0, -Math.sin(a));
         R.put(2, 1, 0);
         R.put(2, 2, Math.cos(a));
+        String s = R.dump();
         return R;
     }
 
@@ -145,12 +154,16 @@ public class Stitcher {
         R.put(2, 0, 0);
         R.put(2, 1, 0);
         R.put(2, 2, 1);
+        String s = R.dump();
         return R;
     }
 
     Mat RzRxRz(double a1, double a2, double a3)
     {
-        return getRz(a1).mul(getRx(a2).mul(getRz(a3)));
+        //return getRz(a1).mul(getRx(a2).mul(getRz(a3)));
+        Mat m = new Mat();
+        Core.gemm(getRz(a1), getRx(a2), 1, getRz(a3), 0, m);
+        return m;
     }
 
     Mat getRot_Euler_ZXZ(double yaw, double phi, double roll)
@@ -159,12 +172,16 @@ public class Stitcher {
         double a2 = -phi;
         double a3 = roll;
         Mat R = RzRxRz(a1, a2, a3);
+        String s = R.dump();
         return R;
+
+
     }
 
     void setRotation(double yaw, double phi, double roll)
     {
-        RM_inv = getRot_Euler_ZXZ(yaw, phi, roll).t();
+        // XXX disabled for now
+        // RM_inv = getRot_Euler_ZXZ(yaw, phi, roll).t();
         needMap = true;
     }
 
@@ -172,8 +189,8 @@ public class Stitcher {
     {
         Mat I = new Mat();
         //I = Mat.eye(3, 3, CV_32F);
-        Mat p1 = new Mat(1, 3, CV_32F);
-        Mat p2 = new Mat(1, 3, CV_32F);
+        Mat p1 = new Mat(3, 1, CV_32F);
+        Mat p2 = new Mat(3, 1, CV_32F);
         double[] d;
 
         try {
@@ -190,25 +207,29 @@ public class Stitcher {
                     // BEGIN rotate_yaw_phi(yaw, phi, yaw, phi);
                     //  BEGIN sph_yaw_phi_r_to_xyz(yaw, phi, 1, x, y, z);
                     double r = 1;
-                    z = r * Math.cos(phi);          // height of the point.
+                    z = r * Math.cos(phi);  // height of the point.
                     double rxy = r * Math.sin(phi); // distance of the point from z axis;
                     x = rxy * Math.cos(yaw);
                     y = rxy * Math.sin(yaw);
                     //  END sph_yaw_phi_r_to_xyz(yaw, phi, 1, x, y, z);
-/*
+
                     p1.put(0, 0, x);
-                    p1.put(0, 1, y);
-                    p1.put(0, 2, z);
+                    p1.put(1, 0, y);
+                    p1.put(2, 0, z);
+
+                    //p2 = new Mat();
                     //Core.gemm(p1, RM_inv, 1, I, 0, p2);
-                    Core.gemm(p1, RM_inv, 1,new Mat(), 0, p2);
+                    Core.gemm(RM_inv, p1, 1, I, 0, p2);
+                    //Core.gemm(p1, RM_inv, 1,new Mat(), 0, p2);
+
 
                     d = p2.get(0, 0);
                     x = d[0];
-                    d = p2.get(0, 1);
+                    d = p2.get(1, 0);
                     y = d[0];
-                    d = p2.get(0, 2);
+                    d = p2.get(2, 0);
                     z = d[0];
-*/
+
                     //  END xyz_to_r_yaw_phi(x, y, z, r, yaw2, phi2);
                     r = Math.sqrt(x * x + y * y + z * z);
                     yaw = Math.atan2(y, x);
@@ -269,6 +290,9 @@ public class Stitcher {
 
         Scalar color = new Scalar(0, 100, 0);
         Imgproc.remap(src, dst, xMap, yMap, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT, color);
+
+        //imwrite("/sdcard/src.jpg", src);
+        //imwrite("/sdcard/dst.jpg", dst);
     }
 
     void stitch(int width, int height, byte[] src, byte[] dst)
