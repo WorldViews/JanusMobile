@@ -21,7 +21,13 @@ import java.util.logging.Logger;
  Convert dual fisheye image to equirectangular.
  */
 
-public class Stitcher {
+public class DualFisheyeStitcher {
+
+    private static final DualFisheyeStitcher instance = new DualFisheyeStitcher();
+
+    public static DualFisheyeStitcher getInstance(){
+        return instance;
+    }
 
     private static final String TAG = "Stitcher";
 
@@ -42,6 +48,7 @@ public class Stitcher {
     private Mat RM_inv = null;
     private boolean haveMap = false;
 
+
     byte[] ySrc = null;
     byte[] uSrc = null;
     byte[] vSrc = null;
@@ -61,9 +68,8 @@ public class Stitcher {
     byte[] uDst = null;
     byte[] vDst = null;
 
-    public Stitcher(double cx, double cy, double cx2, double cy2, double rmax, int viewWidth, int viewHeight) {
-
-
+    private DualFisheyeStitcher()
+    {
         if (OpenCVLoader.initDebug()) {
             Log.d(TAG, "OpenCV Loaded");
         }
@@ -78,7 +84,11 @@ public class Stitcher {
         mDstVsmall = new Mat();
 
         RM_inv = Mat.eye(3,3, CV_64F);
+        phiMax = Math.PI / 2.0;
+    };
 
+    public void setConfig(double cx, double cy, double cx2, double cy2, double rmax, int viewWidth, int viewHeight)
+    {
         this.cx = cx;
         this.cy = cy;
         this.cx2 = cx2;
@@ -88,8 +98,6 @@ public class Stitcher {
         this.viewWidth = viewWidth;
         this.viewHeight = viewHeight;
 
-        phiMax = Math.PI / 2.0;
-
         xMap = new Mat(viewHeight, viewWidth, CV_32FC1);
         yMap = new Mat(viewHeight, viewWidth, CV_32FC1);
 
@@ -97,7 +105,7 @@ public class Stitcher {
         phi_radiansPerPixel = Math.PI / (float) viewHeight;
     }
 
-    Mat getRx(double a)
+    private Mat getRx(double a)
     {
         Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, 1);
@@ -112,7 +120,7 @@ public class Stitcher {
         return R;
     }
 
-    Mat getRy(double a)
+    private Mat getRy(double a)
     {
         Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, Math.cos(a));
@@ -127,7 +135,7 @@ public class Stitcher {
         return R;
     }
 
-    Mat getRz(double a)
+    private Mat getRz(double a)
     {
         Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, Math.cos(a));
@@ -142,7 +150,7 @@ public class Stitcher {
         return R;
     }
 
-    Mat RzRxRz(double a1, double a2, double a3)
+    private Mat RzRxRz(double a1, double a2, double a3)
     {
         Mat m1 = getRz(a1);
         Mat m2 = getRx(a2);
@@ -155,7 +163,7 @@ public class Stitcher {
         //return getRz(a1).mul(getRx(a2).mul(getRz(a3)));
     }
 
-    Mat getRot_Euler_ZXZ(double yaw, double phi, double roll)
+    private Mat getRot_Euler_ZXZ(double yaw, double phi, double roll)
     {
         double a1 = yaw - Math.PI / 2;
         double a2 = -phi;
@@ -166,15 +174,23 @@ public class Stitcher {
 
     }
 
-    void setRotation(double yaw, double phi, double roll)
+    public void setRotation(double yaw, double phi, double roll)
     {
         RM_inv = getRot_Euler_ZXZ(yaw, phi, roll).t();
         String s = RM_inv.dump();
         haveMap = false;
-        generateMap();
     }
 
-    void generateMap()
+
+    public void generateMapAsync() {
+        new Thread(new Runnable() {
+            public void run() {
+                generateMap();
+            }
+        }).start();
+    }
+
+    public void generateMap()
     {
         haveMap = false;
         Mat I = new Mat();
@@ -267,7 +283,7 @@ public class Stitcher {
         }
     }
 
-    void stitch(Mat src, Mat dst)
+    public void stitch(Mat src, Mat dst)
     {
         if (!haveMap) {
             return;
@@ -280,7 +296,7 @@ public class Stitcher {
         //imwrite("/sdcard/dst.jpg", dst);
     }
 
-    void stitch(int width, int height, byte[] src, byte[] dst)
+    public void stitch(int width, int height, byte[] src, byte[] dst)
     {
 
         if (!haveMap) {

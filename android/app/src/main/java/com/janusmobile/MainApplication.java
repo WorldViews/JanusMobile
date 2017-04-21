@@ -11,6 +11,7 @@ import com.facebook.soloader.SoLoader;
 import java.util.Arrays;
 import java.util.List;
 
+import com.janusmobile.WebRTCModule.DualFisheyeStitcher;
 import com.remobile.toast.RCTToastPackage;
 import com.janusmobile.WebRTCModule.WebRTCModulePackage;
 
@@ -41,5 +42,10 @@ public class MainApplication extends Application implements ReactApplication {
   public void onCreate() {
     super.onCreate();
     SoLoader.init(this, /* native exopackage */ false);
+
+    DualFisheyeStitcher stitcher = DualFisheyeStitcher.getInstance();
+    stitcher.setConfig(318.6, 318.8, 959.5, 318.9, 283.5, 1280, 720);
+    stitcher.setRotation(Math.PI/2.0, Math.PI/2.0, 0);
+    stitcher.generateMapAsync();
   }
 }

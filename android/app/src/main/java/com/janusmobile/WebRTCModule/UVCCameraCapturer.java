@@ -49,7 +49,7 @@ import org.webrtc.CameraVideoCapturer.CameraSwitchHandler;
 import org.webrtc.SurfaceTextureHelper.OnTextureFrameAvailableListener;
 import org.webrtc.VideoCapturer.CapturerObserver;
 
-import com.janusmobile.WebRTCModule.Stitcher;
+import com.janusmobile.WebRTCModule.DualFisheyeStitcher;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -75,7 +75,7 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
 
     private Surface previewSurface;
 
-    private Stitcher stitcher;
+    private DualFisheyeStitcher stitcher;
     private byte[] equiData = null;
 
     public void initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, CapturerObserver frameObserver) {
@@ -91,9 +91,7 @@ public class UVCCameraCapturer implements VideoCapturer, Runnable, USBMonitor.On
             throw new IllegalStateException("Already initialized");
         }
 
-        this.stitcher = new Stitcher(318.6, 318.8, 959.5, 318.9, 283.5, 1280, 720);
-        this.stitcher.setRotation(0, -Math.PI, 0);
-
+        this.stitcher = DualFisheyeStitcher.getInstance();
         this.frameObserver = frameObserver;
         this.applicationContext = applicationContext;
 
