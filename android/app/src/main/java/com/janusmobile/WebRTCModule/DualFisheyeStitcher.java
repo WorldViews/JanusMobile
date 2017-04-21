@@ -68,6 +68,8 @@ public class DualFisheyeStitcher {
     private byte[] uDst = null;
     private byte[] vDst = null;
 
+    Thread mapThread = null;
+
     private DualFisheyeStitcher()
     {
         if (OpenCVLoader.initDebug()) {
@@ -183,12 +185,16 @@ public class DualFisheyeStitcher {
 
 
     public void generateMapAsync() {
-        new Thread(new Runnable() {
+        this.mapThread = new Thread(new Runnable() {
             public void run() {
                 generateMap();
             }
-        }).start();
+        });
+
+        this.mapThread.start();
     }
+
+
 
     public void generateMap()
     {
