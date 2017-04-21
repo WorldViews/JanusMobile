@@ -49,24 +49,24 @@ public class DualFisheyeStitcher {
     private boolean haveMap = false;
 
 
-    byte[] ySrc = null;
-    byte[] uSrc = null;
-    byte[] vSrc = null;
+    private byte[] ySrc = null;
+    private byte[] uSrc = null;
+    private byte[] vSrc = null;
 
-    Mat mSrcY = null;
-    Mat mSrcUsmall = null;
-    Mat mSrcVsmall = null;
-    Mat mSrcU = null;
-    Mat mSrcV = null;
-    Mat mSrcYUV = null;
+    private Mat mSrcY = null;
+    private Mat mSrcUsmall = null;
+    private Mat mSrcVsmall = null;
+    private Mat mSrcU = null;
+    private Mat mSrcV = null;
+    private Mat mSrcYUV = null;
 
-    Mat mDstYUV = null;
-    Mat mDstUsmall = null;
-    Mat mDstVsmall = null;
+    private Mat mDstYUV = null;
+    private Mat mDstUsmall = null;
+    private Mat mDstVsmall = null;
 
-    byte[] yDst = null;
-    byte[] uDst = null;
-    byte[] vDst = null;
+    private byte[] yDst = null;
+    private byte[] uDst = null;
+    private byte[] vDst = null;
 
     private DualFisheyeStitcher()
     {
@@ -291,9 +291,6 @@ public class DualFisheyeStitcher {
 
         Scalar color = new Scalar(0, 100, 0);
         Imgproc.remap(src, dst, xMap, yMap, Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT, color);
-
-        //imwrite("/sdcard/src.jpg", src);
-        //imwrite("/sdcard/dst.jpg", dst);
     }
 
     public void stitch(int width, int height, byte[] src, byte[] dst)
