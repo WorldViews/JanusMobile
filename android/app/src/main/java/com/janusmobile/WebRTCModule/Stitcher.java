@@ -8,10 +8,9 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import java.util.Arrays;
-import static org.opencv.core.CvType.CV_32F;
+import static org.opencv.core.CvType.CV_64F;
 import static org.opencv.core.CvType.CV_32FC1;
 import static org.opencv.core.CvType.CV_8UC1;
-import static org.opencv.imgcodecs.Imgcodecs.imwrite;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +40,7 @@ public class Stitcher {
     private double phi_radiansPerPixel;
 
     private Mat RM_inv = null;
-    private boolean needMap = true;
+    private boolean haveMap = false;
 
     byte[] ySrc = null;
     byte[] uSrc = null;
@@ -64,10 +63,8 @@ public class Stitcher {
 
     public Stitcher(double cx, double cy, double cx2, double cy2, double rmax, int viewWidth, int viewHeight) {
 
-        //System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
         if (OpenCVLoader.initDebug()) {
-            // do some opencv stuff
             Log.d(TAG, "OpenCV Loaded");
         }
 
@@ -80,8 +77,7 @@ public class Stitcher {
         mDstUsmall = new Mat();
         mDstVsmall = new Mat();
 
-        RM_inv = new Mat();
-        RM_inv = Mat.eye(3,3, CV_32F);
+        RM_inv = Mat.eye(3,3, CV_64F);
 
         this.cx = cx;
         this.cy = cy;
@@ -93,26 +89,17 @@ public class Stitcher {
         this.viewHeight = viewHeight;
 
         phiMax = Math.PI / 2.0;
-        //fisheyeAspect = 1.0;
-        //fisheyeBackRot = 0.0;
-        needMap = true;
 
         xMap = new Mat(viewHeight, viewWidth, CV_32FC1);
         yMap = new Mat(viewHeight, viewWidth, CV_32FC1);
 
         yaw_radiansPerPixel = 2 * Math.PI / (float) viewWidth;
         phi_radiansPerPixel = Math.PI / (float) viewHeight;
-
-
-        float[] upRight =  new float[]  {0, -1,  0,
-                                        0,   0, -1,
-                                        1,   0,  0};
-        RM_inv.put(0, 0, upRight);
     }
 
     Mat getRx(double a)
     {
-        Mat R = new Mat(3, 3, CV_32F);
+        Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, 1);
         R.put(0, 1, 0);
         R.put(0, 2, 0);
@@ -122,13 +109,12 @@ public class Stitcher {
         R.put(2, 0, 0);
         R.put(2, 1, Math.sin(a));
         R.put(2, 2, Math.cos(a));
-        String s = R.dump();
         return R;
     }
 
     Mat getRy(double a)
     {
-        Mat R = new Mat(3, 3, CV_32F);
+        Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, Math.cos(a));
         R.put(0, 1, 0);
         R.put(0, 2, Math.sin(a));
@@ -138,13 +124,12 @@ public class Stitcher {
         R.put(2, 0, -Math.sin(a));
         R.put(2, 1, 0);
         R.put(2, 2, Math.cos(a));
-        String s = R.dump();
         return R;
     }
 
     Mat getRz(double a)
     {
-        Mat R = new Mat(3, 3, CV_32F);
+        Mat R = new Mat(3, 3, CV_64F);
         R.put(0, 0, Math.cos(a));
         R.put(0, 1, -Math.sin(a));
         R.put(0, 2, 0);
@@ -154,16 +139,20 @@ public class Stitcher {
         R.put(2, 0, 0);
         R.put(2, 1, 0);
         R.put(2, 2, 1);
-        String s = R.dump();
         return R;
     }
 
     Mat RzRxRz(double a1, double a2, double a3)
     {
+        Mat m1 = getRz(a1);
+        Mat m2 = getRx(a2);
+        Mat m3 = getRz(a3);
+        Mat m4 = new Mat();
+
+        Core.gemm(m1, m2, 1, m3, 0, m4);
+        return m4;
+   
         //return getRz(a1).mul(getRx(a2).mul(getRz(a3)));
-        Mat m = new Mat();
-        Core.gemm(getRz(a1), getRx(a2), 1, getRz(a3), 0, m);
-        return m;
     }
 
     Mat getRot_Euler_ZXZ(double yaw, double phi, double roll)
@@ -172,7 +161,6 @@ public class Stitcher {
         double a2 = -phi;
         double a3 = roll;
         Mat R = RzRxRz(a1, a2, a3);
-        String s = R.dump();
         return R;
 
 
@@ -180,17 +168,18 @@ public class Stitcher {
 
     void setRotation(double yaw, double phi, double roll)
     {
-        // XXX disabled for now
-        // RM_inv = getRot_Euler_ZXZ(yaw, phi, roll).t();
-        needMap = true;
+        RM_inv = getRot_Euler_ZXZ(yaw, phi, roll).t();
+        String s = RM_inv.dump();
+        haveMap = false;
+        generateMap();
     }
 
     void generateMap()
     {
+        haveMap = false;
         Mat I = new Mat();
-        //I = Mat.eye(3, 3, CV_32F);
-        Mat p1 = new Mat(3, 1, CV_32F);
-        Mat p2 = new Mat(3, 1, CV_32F);
+        Mat p1 = new Mat(3, 1, CV_64F);
+        Mat p2 = new Mat(3, 1, CV_64F);
         double[] d;
 
         try {
@@ -217,11 +206,7 @@ public class Stitcher {
                     p1.put(1, 0, y);
                     p1.put(2, 0, z);
 
-                    //p2 = new Mat();
-                    //Core.gemm(p1, RM_inv, 1, I, 0, p2);
                     Core.gemm(RM_inv, p1, 1, I, 0, p2);
-                    //Core.gemm(p1, RM_inv, 1,new Mat(), 0, p2);
-
 
                     d = p2.get(0, 0);
                     x = d[0];
@@ -247,7 +232,7 @@ public class Stitcher {
                         yaw += Math.PI;
                     }
                     // BEGIN yaw_phi_to_ixy(yaw, phi, x, y);
-                    if (phi > Math.PI / 2) {
+                    if (phi > Math.PI / 2) { // back lens
                         //yaw += fisheyeBackRot;
                         //double r = phi_to_r(M_PI - phi);
                         r = (Math.PI - phi) * rmax / phiMax;
@@ -255,7 +240,7 @@ public class Stitcher {
 
                         ix = cx2 - cx - r * Math.sin(yaw); // * fisheyeAspect;
                         iy = r * Math.cos(yaw) + cy2 - cy;
-                    } else {
+                    } else {  // front lens
                         // BEGIN double r = phi_to_r(phi);
                         r = phi * rmax / phiMax;
                         // END double r = phi_to_r(phi);
@@ -275,7 +260,7 @@ public class Stitcher {
                     yMap.put(j, i, fy);
                 }
             }
-            needMap = false;
+            haveMap = true;
         } catch (Exception e) {
             Logger logger = Logger.getAnonymousLogger();
             logger.log(Level.SEVERE, "an exception was thrown", e);
@@ -284,8 +269,8 @@ public class Stitcher {
 
     void stitch(Mat src, Mat dst)
     {
-        if (needMap) {
-            generateMap();
+        if (!haveMap) {
+            return;
         }
 
         Scalar color = new Scalar(0, 100, 0);
@@ -297,7 +282,13 @@ public class Stitcher {
 
     void stitch(int width, int height, byte[] src, byte[] dst)
     {
-        // Create a YUV image from the I420sp.   This format is a plane height*width
+
+        if (!haveMap) {
+            System.arraycopy(src, 0, dst, 0, src.length);
+            return;
+        }
+
+         // Create a YUV image from the I420sp.   This format is a plane height*width
         // of Y, followed by a plane of interleaved V and U, sub-sampled by 2 in each
         // direction.
 
