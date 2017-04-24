@@ -16,7 +16,8 @@
     "react-native-webrtc": "git+https://git@github.com/oney/react-native-webrtc.git",
     "react-redux": "^5.0.3",
     "react-router": "^4.0.0",
-    "redux": "^3.6.0"
+    "redux": "^3.6.0",
+    "socket.io-client": "^1.7.3"
   },
   "devDependencies": {
     "babel-jest": "19.0.0",

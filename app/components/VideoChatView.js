@@ -26,6 +26,8 @@ import LoginView from './LoginView';
 
 import JanusClient from '../lib/JanusClient'
 
+import GPS from '../lib/GPS'
+
 class VideoChatView extends Component {
     constructor(props) {
         super(props);
@@ -35,6 +37,7 @@ class VideoChatView extends Component {
           muteAudio: false
         };
         let self = this;
+        this.gps = new GPS({username: this.props.username});
 
         //let state = this.props.getState();
         JanusClient.connect(this.props.janusURL, this.props.roomId, 
@@ -49,6 +52,14 @@ class VideoChatView extends Component {
           onaddstream: (stream) => this.props.dispatch(actions.addStream(stream)),
           onremovestream: (stream) => this.props.dispatch(actions.removeStream(stream))
         });
+    }
+
+    componentDidMount() {
+        this.gps.start();
+    }
+
+    componentWillUnmount() {
+        this.gps.stop();
     }
 
     onLogout() {
