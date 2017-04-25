@@ -12,7 +12,7 @@ export default class Gps {
       this.username = options.username || "Unknown";
   };
 
-  start() {
+  start(videoType) {
     Location.startUpdatingLocation();
     this.sock = io.connect(this.url);
 
@@ -53,6 +53,7 @@ export default class Gps {
                 msgType: 'position',
                 version: 0.1,
                 clientType: 'android',
+                videoType: videoType,
                 clientId: this.username,
                 t: new Date().getTime() / 1000.0,
                 position: [location.latitude, location.longitude, location.altitude],

@@ -55,7 +55,7 @@ class VideoChatView extends Component {
     }
 
     componentDidMount() {
-        this.gps.start();
+        this.gps.start(useOTG ? '360': null);
     }
 
     componentWillUnmount() {
