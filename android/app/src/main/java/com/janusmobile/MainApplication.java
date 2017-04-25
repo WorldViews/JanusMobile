@@ -14,6 +14,7 @@ import java.util.List;
 import com.janusmobile.WebRTCModule.DualFisheyeStitcher;
 import com.remobile.toast.RCTToastPackage;
 import com.janusmobile.WebRTCModule.WebRTCModulePackage;
+import com.syarul.rnlocation.RNLocation;
 
 public class MainApplication extends Application implements ReactApplication {
 
@@ -28,7 +29,8 @@ public class MainApplication extends Application implements ReactApplication {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
           new WebRTCModulePackage(),
-          new RCTToastPackage()
+          new RCTToastPackage(),
+          new RNLocation()
       );
     }
   };

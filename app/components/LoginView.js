@@ -104,14 +104,15 @@ export default connect(mapStateToProps)(LoginView);
 
 const styles = StyleSheet.create({
     container: {
+        flexDirection: 'column',
         flex: 1,
-        justifyContent: 'center',
+        // justifyContent: 'center',
         alignItems: 'center',
         padding: 50,
         backgroundColor: '#4099ff',
     },
     logo: {
-        marginTop: 40
+        marginTop: 10
     },
     login: {
         padding: 10,
