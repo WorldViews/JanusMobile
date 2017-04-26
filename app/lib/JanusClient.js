@@ -63,10 +63,10 @@ class JanusClient {
           let constraints = {
               audio: true,
               video: {
-              mandatory: {
-                  minWidth: 1280, // Provide your own width, height and frame rate here
-                  minHeight: 720,
-                  minFrameRate: 30
+                mandatory: {
+                    minWidth: 1280, // Provide your own width, height and frame rate here
+                    minHeight: 720,
+                    minFrameRate: 30
               },
               facingMode: (isFront ? "user" : "environment"),
               optional: (videoSourceId ? [{ sourceId: videoSourceId }] : [])
@@ -82,7 +82,7 @@ class JanusClient {
   initJanus(url, cb) {
     let self = this;
     Janus.init({
-      debug: "all", 
+      debug: "all",
       callback: () => {
         self.janus = new Janus({
           server: url,
@@ -145,7 +145,13 @@ class JanusClient {
                 jsep: jsep,
                 // Add data:true here if you want to subscribe to datachannels as well
                 // (obviously only works if the publisher offered them in the first place)
-                media: { audioSend: false, videoSend: false },	// We want recvonly audio/video
+                media: {
+                  audioSend: false,
+                  videoSend: false,
+                  audioRecv: true, // receive audio
+                  videoRecv: false, // don't receive video
+                  data: true
+                },	// We want recvonly audio/video
                 success: function(jsep) {
                   Janus.debug("Got SDP!");
                   Janus.debug(jsep);
@@ -176,8 +182,37 @@ class JanusClient {
           if (self.options.onremovestream) {
             self.options.onremovestream(currentStream);
           }
+        },
+        ondataopen: function() {
+          self.sendStatus();
         }
       });
+  }
+
+  sendStatus() {
+    let self = this;
+    let content = {
+      source: self.videoRoom.id,
+      status: {
+        id: self.videoRoom.id,
+        audioEnabled: true,
+        videoEnabled: true,
+        speaking: false,
+        picture: null,
+        display: self.state.username,
+        // videoType: '360'
+        videoType: self.state.useOTG ? '360' : 'normal'
+      }
+    };
+    var text = JSON.stringify({
+      type: 'statusUpdate',
+      content: content
+    });
+    self.videoRoom.data({
+      text: text,
+      error: function(reason) { console.error(reason); },
+      success: function() { console.log("statusUpdate sent"); }
+    });
   }
 
   attachVideoRoom(cb) {
@@ -216,13 +251,13 @@ class JanusClient {
       ondataopen: function() {
         console.log("The publisher DataChannel is available");
         //connection.onDataOpen();
-        //sendStatus();
+        self.sendStatus();
       },
       onlocalstream: function(stream) {
         // Step 4b (parallel with 4a).
         // Send the created stream to the UI, so it can be attached to
         // some element of the local DOM
-        console.log(" ::: Got a local stream :::");        
+        console.log(" ::: Got a local stream :::");
         // var feed = FeedsService.findMain();
         // feed.setStream(stream);
       },
@@ -259,7 +294,7 @@ class JanusClient {
           // });
 
           let media = {
-            videoRecv: false, 
+            videoRecv: false,
             audioRecv: false,
             videoSend: true,
             audioSend: true,
@@ -279,7 +314,7 @@ class JanusClient {
 
               var publish = { "request": "configure", "audio": true, "video": true };
               self.videoRoom.send({"message": publish, "jsep": jsep});
-              
+
             },
             error: function(error) {
               console.error("WebRTC error publishing");
@@ -291,9 +326,7 @@ class JanusClient {
 
           // // Step 5. Attach to existing feeds, if any
           if ((msg.publishers instanceof Array) && msg.publishers.length > 0) {
-              msg.publishers.map(function(feed) {
-                self.subscribeFeed(feed);
-              });
+            self.subscribeToFeeds(msg.publishers);
           }
           // The room has been destroyed
         } else if (event === "destroyed") {
@@ -302,7 +335,7 @@ class JanusClient {
         } else if (event === "event") {
           // Any new feed to attach to?
           if ((msg.publishers instanceof Array) && msg.publishers.length > 0) {
-            //that.subscribeToFeeds(msg.publishers, that.room.id);
+            self.subscribeToFeeds(msg.publishers);
           // One of the publishers has gone away?
           } else if(msg.leaving !== undefined && msg.leaving !== null) {
             var leaving = msg.leaving;
@@ -324,7 +357,7 @@ class JanusClient {
         if (jsep !== undefined && jsep !== null) {
           self.videoRoom.handleRemoteJsep({jsep: jsep});
         }
-      }      
+      }
     })
   }
 
