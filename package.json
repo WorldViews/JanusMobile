@@ -14,7 +14,7 @@
     "react-native-checkbox": "^1.1.0",
     "react-native-gps": "git+https://git@github.com/agrass/react-native-gps.git",
     "react-native-toast": "^1.0.1",
-    "react-native-webrtc": "git+https://git@github.com/oney/react-native-webrtc.git",
+    "react-native-webrtc": "^1.57.0",
     "react-redux": "^5.0.3",
     "react-router": "^4.0.0",
     "redux": "^3.6.0",

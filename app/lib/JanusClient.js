@@ -157,6 +157,9 @@ class JanusClient {
                   Janus.debug(jsep);
                   var body = { "request": "start", "room": self.state.roomId };
                   remoteFeed.send({"message": body, "jsep": jsep});
+                  setTimeout(function() {
+                    self.sendStatus();
+                  }, 5000);
                 },
                 error: function(error) {
                   Janus.error("WebRTC error:", error);

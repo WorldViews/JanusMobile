@@ -10,7 +10,7 @@ const initialState = {
     videoURL: null,
     connected: false,
     janusURL: 'wss://sd6.dcpfs.net:8989/janus',
-    roomId: 9000,
+    roomId: 1235,
     useOTG: false,
     muteAudio: false,
     muteVideo: false,
