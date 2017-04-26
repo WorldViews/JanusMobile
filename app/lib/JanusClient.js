@@ -15,6 +15,8 @@ class JanusClient {
 
     constructor() {
         this.state = {};
+        this.remoteStreams = {};
+        this.remoteFeeds = {};
     }
 
     //connect(url, username, password, roomId, cb) {
@@ -112,6 +114,7 @@ class JanusClient {
         opaqueId: this.state.opaqueId,
         success: function(pluginHandle) {
           remoteFeed = pluginHandle;
+          self.remoteFeeds[feed.id] = remoteFeed;
           Janus.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
           Janus.log("  -- This is a subscriber");
           // We wait for the plugin to send us an offer
@@ -179,12 +182,15 @@ class JanusClient {
           if (self.options.onaddstream) {
             self.options.onaddstream(currentStream);
           }
+          self.remoteStreams[feed.id] = currentStream;
         },
         oncleanup: function() {
           Janus.log(" ::: Got a cleanup notification (remote feed " + feed.id + ") :::");
           if (self.options.onremovestream) {
             self.options.onremovestream(currentStream);
           }
+          delete self.remoteStreams[feed.id];
+          delete self.remoteFeeds[feed.id];
         },
         ondataopen: function() {
           self.sendStatus();
@@ -347,6 +353,14 @@ class JanusClient {
           } else if(msg.unpublished !== undefined && msg.unpublished !== null) {
             var unpublished = msg.unpublished;
             //ActionService.destroyFeed(unpublished);
+            let stream = self.remoteStreams[unpublished];
+            if (stream) {
+              if (self.options.onremovestream) {
+                self.options.onremovestream(stream);
+              }
+            }
+            delete self.remoteFeeds[unpublished];
+            delete self.remoteStreams[unpublished];
           // Reply to a configure request
           } else if (msg.configured) {
             // connection.confirmConfig();
