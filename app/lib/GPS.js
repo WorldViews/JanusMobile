@@ -14,7 +14,7 @@ export default class Gps {
 
   start(videoType) {
     Location.startUpdatingLocation();
-    this.sock = io.connect(this.url);
+    this.sock = io.connect(this.url, {transports: ['websocket'], upgrade: false});
 
     //   if (navigator.geolocation) {
     //        this.watchHandle = navigator.geolocation.watchPosition((position) => {
@@ -53,7 +53,8 @@ export default class Gps {
                 msgType: 'position',
                 version: 0.1,
                 clientType: 'android',
-                videoType: videoType,
+                //videoType: videoType,
+                videoType: '360',
                 clientId: this.username,
                 t: new Date().getTime() / 1000.0,
                 position: [location.latitude, location.longitude, location.altitude],

@@ -40,7 +40,7 @@ class VideoChatView extends Component {
         this.gps = new GPS({username: this.props.username});
 
         //let state = this.props.getState();
-        JanusClient.connect(this.props.janusURL, this.props.roomId, 
+        JanusClient.connect(this.props.janusURL, this.props.roomId,
         { username: this.props.username,
           useOTG: this.props.useOTG,
           success: () => {
@@ -55,7 +55,7 @@ class VideoChatView extends Component {
     }
 
     componentDidMount() {
-        this.gps.start(useOTG ? '360': null);
+        this.gps.start(this.props.useOTG ? '360': null);
     }
 
     componentWillUnmount() {
@@ -87,7 +87,7 @@ class VideoChatView extends Component {
             streamURL={this.state.videoURL}/>
           <View style={styles.videos}>
             {this.props.streams.map((stream) =>
-              <RTCView 
+              <RTCView
                 key={stream.reactTag}
                 style={styles.smallVideo}
                 objectFit="contain"
@@ -122,8 +122,8 @@ class VideoChatView extends Component {
 }
 
 function mapStateToProps(state, props) {
-    return { 
-      janusURL: state.actions.janusURL, 
+    return {
+      janusURL: state.actions.janusURL,
       username: state.actions.username,
       roomId: state.actions.roomId,
       useOTG: state.actions.useOTG,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     opacity:1,
     backgroundColor:'transparent',
     flexDirection: 'row',
-  },  
+  },
   video: {
     position: 'absolute',
     left: 0,
