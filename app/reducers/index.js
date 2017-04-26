@@ -4,7 +4,7 @@ import * as types from '../constants/ActionTypes'
 import { View } from 'react-native';
 
 const initialState = {
-    username: "anon",
+    username: "",
     route: View,
     store: null,
     videoURL: null,
@@ -28,7 +28,8 @@ function actions(state = initialState, action) {
             return {
                 ...state,
                 connected: true,
-                username: action.username
+                username: action.username,
+                roomId: parseInt(action.roomId)
             };
         case types.DISCONNECT:
             return {

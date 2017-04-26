@@ -23,8 +23,24 @@ import CheckBox from 'react-native-checkbox';
 class LoginView extends Component {
     constructor(props) {
         super(props);
-        this.state = { 
-            username: '',
+        this.state = {
+            username: props.username,
+            roomId: props.roomId.toString(),
+            useOTG: props.useOTG
+         };
+    }
+
+    static stateToProps(state) {
+        return {
+            username: state.actions.username,
+            roomId: state.actions.roomId,
+            useOTG: state.actions.useOTG
+        };
+    }
+
+    componentWillUpdate(props) {
+        this.state = {
+            username: props.username,
             roomId: props.roomId.toString(),
             useOTG: props.useOTG
          };
@@ -33,9 +49,8 @@ class LoginView extends Component {
     onLogin() {
         console.log('Login:', this.state);
         if (this.state.username) {
-            this.props.dispatch(actions.setRoomId(parseInt(this.state.roomId)));
             this.props.dispatch(actions.useOTGCamera(this.state.useOTG));
-            this.props.dispatch(actions.connect(this.state.username));
+            this.props.dispatch(actions.connect(this.state.username, this.state.roomId));
             this.props.dispatch(actions.route(VideoChatView))
         } else {
             Toast.show("Please enter a username");
@@ -71,7 +86,7 @@ class LoginView extends Component {
                     underlineColorAndroid="#fff"
                     onChangeText={(roomId) => this.setState({roomId})}
                     value={this.state.roomId}
-                />                
+                />
                 <View style={styles.checkbox}>
                     <CheckBox label="Use OTG Camera"
                         labelStyle={styles.text}
@@ -90,17 +105,7 @@ class LoginView extends Component {
     }
 }
 
-//const ConnectedLoginView = connect(mapStateToProps)(LoginView);
-// const ConnectedLoginView = LoginView;
-
-function mapStateToProps(state) {
-    return { 
-        roomId: state.actions.roomId,
-        useOTG: state.actions.useOTG
-    };
-}
-
-export default connect(mapStateToProps)(LoginView);
+export default connect(LoginView.stateToProps)(LoginView);
 
 const styles = StyleSheet.create({
     container: {
@@ -125,7 +130,7 @@ const styles = StyleSheet.create({
     },
     input: {
         height: 60,
-        borderColor: '#aaa', 
+        borderColor: '#aaa',
         borderWidth: 1,
         borderRadius: 5,
         padding: 10,
