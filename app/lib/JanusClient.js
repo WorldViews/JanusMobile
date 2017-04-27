@@ -34,6 +34,10 @@ class JanusClient {
     }
 
     disconnect() {
+        if (this.sendStatusInterval) {
+          clearInterval(this.sendStatusInterval);
+          this.sendStatusInterval = null;
+        }
         this.state.localStream.release();
         this.janus.destroy();
     }
@@ -261,6 +265,12 @@ class JanusClient {
         console.log("The publisher DataChannel is available");
         //connection.onDataOpen();
         self.sendStatus();
+        if (self.sendStatusInterval) {
+          clearInterval(self.sendStatusInterval);
+        }
+        self.sendStatusInterval = setInterval(function() {
+          self.sendStatus();
+        }, 10000);
       },
       onlocalstream: function(stream) {
         // Step 4b (parallel with 4a).
