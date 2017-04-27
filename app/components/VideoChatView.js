@@ -5,7 +5,8 @@ import {
     TextInput,
     StyleSheet,
     Text,
-    View
+    View,
+    ScrollView
 } from 'react-native';
 
 import { connect } from 'react-redux';
@@ -89,7 +90,7 @@ class VideoChatView extends Component {
             objectFit="contain"
             zOrder={0}
             streamURL={this.state.videoURL}/>
-          <View style={styles.videos}>
+          <ScrollView style={styles.videos}>
             {this.props.streams.map((stream) =>
               <RTCView
                 key={stream.reactTag}
@@ -99,7 +100,7 @@ class VideoChatView extends Component {
                 streamURL={stream.toURL()}
                />
             )}
-          </View>
+          </ScrollView>
           <View style={styles.controls}>
             <View style={styles.button}>
               <Button title="Logout"
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   },
   smallVideo: {
     margin:5,
-    backgroundColor: '#000',
+    backgroundColor: '#333',
     width: 100,
     height: 100,
     borderRadius: 5,
