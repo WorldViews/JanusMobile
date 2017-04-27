@@ -23,6 +23,8 @@ import CheckBox from 'react-native-checkbox';
 
 import DeviceInfo from 'react-native-device-info';
 
+import HockeyApp from 'react-native-hockeyapp';
+
 class LoginView extends Component {
     constructor(props) {
         super(props);
@@ -39,6 +41,10 @@ class LoginView extends Component {
             roomId: state.actions.roomId,
             useOTG: state.actions.useOTG
         };
+    }
+
+    componentDidMount() {
+        HockeyApp.checkForUpdate();
     }
 
     componentWillUpdate(props) {
