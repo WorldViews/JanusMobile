@@ -40,6 +40,8 @@ import { Provider } from 'react-redux';
 import reducer from './reducers'
 const store = createStore(reducer)
 
+import HockeyApp from 'react-native-hockeyapp';
+const HOCKEY_APP_ID = 'be26609930f14cadae2947034029ba7f';
 
 export default class JanusMobile extends Component {
 
@@ -65,6 +67,15 @@ export default class JanusMobile extends Component {
     return {
       roomId: state.action.roomId
     }
+  }
+
+  componentWillMount() {
+    HockeyApp.configure(HOCKEY_APP_ID, true);
+  }
+
+  componentDidMount() {
+    HockeyApp.start();
+    HockeyApp.checkForUpdate(); // optional
   }
 
   /**

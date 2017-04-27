@@ -1,12 +1,20 @@
 rootProject.name = 'JanusMobile'
+include ':react-native-device-info'
+project(':react-native-device-info').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-device-info/android')
 
-include ':libuvccamera', ':app'
+include ':react-native-webrtc'
+project(':react-native-webrtc').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-webrtc/android')
 
-include ':WebRTCModule'
-project(':WebRTCModule').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-webrtc/android')
+include ':react-native-keep-awake'
+project(':react-native-keep-awake').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-keep-awake/android')
+
+include ':react-native-hockeyapp'
+project(':react-native-hockeyapp').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-hockeyapp/android')
 
 include ':react-native-toast'
-project(':react-native-toast').projectDir = new File(settingsDir, '../node_modules/@remobile/react-native-toast/android')
+project(':react-native-toast').projectDir = new File(settingsDir, '../node_modules/react-native-toast/android')
 
-include ':RNLocation'
-project(':RNLocation').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-gps')
+include ':react-native-gps'
+project(':react-native-gps').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-gps')
+
+include ':libuvccamera', ':app'

@@ -3,6 +3,11 @@ package com.janusmobile;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.learnium.RNDeviceInfo.RNDeviceInfo;
+import com.oney.WebRTCModule.WebRTCModulePackage;
+import com.corbt.keepawake.KCKeepAwakePackage;
+import com.slowpath.hockeyapp.RNHockeyAppPackage;
+import com.remobile.toast.RCTToastPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
@@ -12,8 +17,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.janusmobile.WebRTCModule.DualFisheyeStitcher;
-import com.remobile.toast.RCTToastPackage;
-import com.janusmobile.WebRTCModule.WebRTCModulePackage;
 import com.syarul.rnlocation.RNLocation;
 
 public class MainApplication extends Application implements ReactApplication {
@@ -28,9 +31,12 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
-          new WebRTCModulePackage(),
-          new RCTToastPackage(),
-          new RNLocation()
+            new RNDeviceInfo(),
+            new WebRTCModulePackage(),
+            new KCKeepAwakePackage(),
+            new RNHockeyAppPackage(MainApplication.this),
+            new RCTToastPackage(),
+            new RNLocation()
       );
     }
   };

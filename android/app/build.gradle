@@ -90,8 +90,8 @@ android {
         applicationId "com.janusmobile"
         minSdkVersion 19
         targetSdkVersion 22
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.0.2"
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
@@ -143,10 +143,13 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: "libs", include: ["*.jar"])
-    compile project(':WebRTCModule')
+    compile project(':react-native-device-info')
+    compile project(':react-native-webrtc')
+    compile project(':react-native-keep-awake')
+    compile project(':react-native-hockeyapp')
     compile project(':react-native-toast')
-    compile project(':RNLocation')
+    compile project(':react-native-gps')
+    compile fileTree(dir: "libs", include: ["*.jar"])
     releaseCompile project(path:':libuvccamera',configuration:'release')
     debugCompile project(path:':libuvccamera',configuration:'debug')
     compile "com.android.support:appcompat-v7:23.0.1"

@@ -21,6 +21,8 @@ import Toast from 'react-native-toast';
 
 import CheckBox from 'react-native-checkbox';
 
+import DeviceInfo from 'react-native-device-info';
+
 class LoginView extends Component {
     constructor(props) {
         super(props);
@@ -102,6 +104,9 @@ class LoginView extends Component {
                     style={styles.login}
                     onPress={() => this.onLogin()}
                 >LOGIN</Button>
+                <Text style={styles.version}>
+                    Version: {DeviceInfo.getVersion()} ({DeviceInfo.getBuildNumber()})
+                </Text>
             </View>
             </ScrollView>
         )
@@ -116,6 +121,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flexDirection: 'column',
+        height: '100%',
         flex: 1,
         // justifyContent: 'center',
         alignItems: 'center',
@@ -158,5 +164,10 @@ const styles = StyleSheet.create({
     },
     text: {
         color: '#fff'
+    },
+    version: {
+        color: '#fff',
+        position: 'absolute',
+        bottom: 0
     }
 });

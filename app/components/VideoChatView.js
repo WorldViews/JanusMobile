@@ -28,6 +28,8 @@ import JanusClient from '../lib/JanusClient'
 
 import GPS from '../lib/GPS'
 
+import KeepAwake from 'react-native-keep-awake';
+
 class VideoChatView extends Component {
     constructor(props) {
         super(props);
@@ -56,10 +58,12 @@ class VideoChatView extends Component {
 
     componentDidMount() {
         this.gps.start(this.props.useOTG ? '360': null);
+        KeepAwake.activate();
     }
 
     componentWillUnmount() {
         this.gps.stop();
+        KeepAwake.deactivate();
     }
 
     onLogout() {
