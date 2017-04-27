@@ -5,7 +5,8 @@ import {
     StyleSheet,
     TextInput,
     Text,
-    View
+    View,
+    ScrollView
 } from 'react-native';
 
 import Button from 'react-native-button';
@@ -64,6 +65,7 @@ class LoginView extends Component {
 
     render() {
         return (
+            <ScrollView horizontal={false} style={styles.scrollview}>
             <View style={styles.container}>
                 <Image style={styles.logo}
                     source={require('../img/logo.png')}
@@ -101,6 +103,7 @@ class LoginView extends Component {
                     onPress={() => this.onLogin()}
                 >LOGIN</Button>
             </View>
+            </ScrollView>
         )
     }
 }
@@ -108,6 +111,9 @@ class LoginView extends Component {
 export default connect(LoginView.stateToProps)(LoginView);
 
 const styles = StyleSheet.create({
+    scrollview: {
+        backgroundColor: '#4099ff'
+    },
     container: {
         flexDirection: 'column',
         flex: 1,
