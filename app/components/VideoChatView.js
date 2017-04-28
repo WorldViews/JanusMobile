@@ -6,8 +6,11 @@ import {
     StyleSheet,
     Text,
     View,
-    ScrollView
+    ScrollView,
+    NativeModules
 } from 'react-native';
+
+const {WebRTCModule} = NativeModules;
 
 import { connect } from 'react-redux';
 
@@ -61,11 +64,13 @@ class VideoChatView extends Component {
     }
 
     componentDidMount() {
+        WebRTCModule.startAudioManager();
         this.gps.start(this.props.useOTG ? '360': null);
         KeepAwake.activate();
     }
 
     componentWillUnmount() {
+        WebRTCModule.stopAudioManager();
         this.gps.stop();
         KeepAwake.deactivate();
     }

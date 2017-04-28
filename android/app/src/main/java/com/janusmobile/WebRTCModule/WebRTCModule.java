@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import android.util.Base64;
@@ -57,6 +58,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     public final Map<String, MediaStream> mMediaStreams;
     public final Map<String, MediaStreamTrack> mMediaStreamTracks;
     private final Map<String, VideoCapturer> mVideoCapturers;
+    private AppRTCAudioManager mAudioManager;
 
     public WebRTCModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -85,6 +87,38 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         final Map<String, Object> constants = new HashMap<>();
         constants.put(LANGUAGE, getCurrentLanguage());
         return constants;
+    }
+
+    @ReactMethod
+    public void startAudioManager() {
+        final Context context = (Context) getReactApplicationContext();
+        Handler mainHandler = new Handler(context.getMainLooper());
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mAudioManager == null) {
+                    mAudioManager = AppRTCAudioManager.create(context);
+                }
+                mAudioManager.start(new AppRTCAudioManager.AudioManagerEvents() {
+                    @Override
+                    public void onAudioDeviceChanged(AppRTCAudioManager.AudioDevice selectedAudioDevice, Set<AppRTCAudioManager.AudioDevice> availableAudioDevices) {
+
+                    }
+                });
+            }
+        });
+    }
+
+    @ReactMethod
+    public void stopAudioManager() {
+        Context context = (Context) getReactApplicationContext();
+        Handler mainHandler = new Handler(context.getMainLooper());
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mAudioManager.stop();
+            }
+        });
     }
 
     @ReactMethod

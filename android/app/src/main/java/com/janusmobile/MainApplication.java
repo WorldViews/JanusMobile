@@ -4,7 +4,7 @@ import android.app.Application;
 
 import com.facebook.react.ReactApplication;
 import com.learnium.RNDeviceInfo.RNDeviceInfo;
-import com.oney.WebRTCModule.WebRTCModulePackage;
+import com.janusmobile.WebRTCModule.WebRTCModulePackage;
 import com.corbt.keepawake.KCKeepAwakePackage;
 import com.slowpath.hockeyapp.RNHockeyAppPackage;
 import com.remobile.toast.RCTToastPackage;
