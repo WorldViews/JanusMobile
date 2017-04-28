@@ -86,7 +86,8 @@ Janus.init = function (options) {
             Janus.vdebug = console.debug.bind(console, 'Janus:');
             Janus.log = console.log.bind(console, 'Janus:');
             Janus.warn = console.warn.bind(console, 'Janus:');
-            Janus.error = console.error.bind(console, 'Janus:');
+            // Janus.error = console.error.bind(console, 'Janus:');
+            Janus.error = console.warn.bind(console, 'Janus:');
         } else if (Array.isArray(options.debug)) {
             for (var i in options.debug) {
                 var d = options.debug[i];
@@ -1784,7 +1785,8 @@ function Janus(gatewayCallbacks) {
                 if (config.mySdp === null || config.mySdp === undefined) {
                     Janus.log("Setting local description");
                     config.mySdp = offer.sdp;
-                    config.pc.setLocalDescription(offer, Janus.noop, Janus.noop);
+                    if (config.pc)
+                        config.pc.setLocalDescription(offer, Janus.noop, Janus.noop);
                 }
                 if (!config.iceDone && !config.trickle) {
                     // Don't do anything until we have all candidates

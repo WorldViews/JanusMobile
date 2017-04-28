@@ -81,7 +81,7 @@ class JanusClient {
           getUserMedia(constraints, function (stream) {
               self.state.localStream = stream;
               self.initJanus(self.state.url, cb);
-          }, console.error);
+          }, console.log);
         });
     }
 
@@ -211,7 +211,7 @@ class JanusClient {
         audioEnabled: true,
         videoEnabled: true,
         speaking: false,
-        picture: null,
+        picture: self.options.picture,
         display: self.state.username,
         // videoType: '360'
         videoType: self.state.useOTG ? '360' : 'normal'
@@ -223,7 +223,7 @@ class JanusClient {
     });
     self.videoRoom.data({
       text: text,
-      error: function(reason) { console.error(reason); },
+      error: function(reason) { console.warn(reason); },
       success: function() { console.log("statusUpdate sent"); }
     });
   }
@@ -260,6 +260,20 @@ class JanusClient {
         //     $$rootScope.$broadcast('muted.Join');
         //   }
         // }
+      },
+      iceState: function (newState) {
+        console.log(" *** ICE STATE: " + newState);
+        switch (newState) {
+          case 'disconnected':
+          case 'failed':
+            if (self.options.ondisconnect) {
+              self.options.ondisconnect();
+            }
+            break;
+
+          default:
+            break;
+        }
       },
       ondataopen: function() {
         console.log("The publisher DataChannel is available");
@@ -336,8 +350,8 @@ class JanusClient {
 
             },
             error: function(error) {
-              console.error("WebRTC error publishing");
-              console.error(error);
+              console.log("WebRTC error publishing");
+              console.log(error);
               // // Call the provided callback for extra actions
               // if (options.error) { options.error(); }
             }

@@ -53,7 +53,10 @@ class VideoChatView extends Component {
             });
           },
           onaddstream: (stream) => this.props.dispatch(actions.addStream(stream)),
-          onremovestream: (stream) => this.props.dispatch(actions.removeStream(stream))
+          onremovestream: (stream) => this.props.dispatch(actions.removeStream(stream)),
+          ondisconnect: () => {
+            this.onLogout();
+          }
         });
     }
 
@@ -94,6 +97,7 @@ class VideoChatView extends Component {
             {this.props.streams.map((stream) =>
               <RTCView
                 key={stream.reactTag}
+                ref={(v) => { this.localVideo = v}}
                 style={styles.smallVideo}
                 objectFit="contain"
                 zOrder={1}
@@ -178,7 +182,7 @@ const styles = StyleSheet.create({
     left:0,
     height:110,
     opacity:1,
-    backgroundColor:'transparent',
+    backgroundColor:'rgba(52, 52, 52, 0.8)',
     flexDirection: 'row',
   },
   video: {

@@ -90,8 +90,8 @@ android {
         applicationId "com.janusmobile"
         minSdkVersion 19
         targetSdkVersion 22
-        versionCode 3
-        versionName "1.0.3"
+        versionCode 4
+        versionName "1.0.4"
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
